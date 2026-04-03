@@ -1,0 +1,43 @@
+# Build folders
+build/
+out/
+dist/
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+Makefile
+
+# Binaries
+*.exe
+*.out
+*.o
+*.obj
+*.a
+*.lib
+*.dll
+*.so
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# VS Code
+.vscode/
+
+# Logs and reports
+*.log
+artifacts/
+coverage/
+
+# Doxygen
+docs/doxygen/html/
+docs/doxygen/latex/
+
+# OS files
+.DS_Store
+Thumbs.db
