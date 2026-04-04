@@ -1,0 +1,20 @@
+name: Feature
+description: New feature or functional implementation
+title: "[FEATURE] "
+labels: ["feature"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      placeholder: Describe the feature
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      placeholder: Define what must be true for this issue to be complete
+  - type: textarea
+    id: refs
+    attributes:
+      label: Requirement References
+      placeholder: e.g. FR-001, NFR-SAF-001
