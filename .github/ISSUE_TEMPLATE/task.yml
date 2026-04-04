@@ -1,0 +1,13 @@
+name: Task
+description: Development or documentation task
+title: "[TASK] "
+labels: ["task"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Task Description
+  - type: textarea
+    id: done
+    attributes:
+      label: Done Criteria
