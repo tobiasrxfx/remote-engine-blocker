@@ -19,9 +19,42 @@ This repository contains:
 - `docs/` → architecture, RTM, decisions, and test plan
 - `.github/` → CI and contribution templates
 
-## Build
+## Build environment
 
-Instructions will be added as the build system is finalized.
+This project is standardized on:
+
+- GCC as the C compiler
+- CMake as the build system generator
+- Ninja as the build backend
+
+### Required tools
+
+- GCC
+- CMake
+- Ninja
+- Python 3.x
+
+### Windows setup
+
+Check WinGet:
+```powershell
+winget --version
+```
+Check the compiler and build tools:
+```powershell
+gcc --version
+cmake --version
+ninja --version
+```
+If one of these is not properly installed, the build will not work. Otherwise, go to the next step.
+
+### Configure and build
+In the repository root `` remote-engine-blocker/`` run the following commands:
+
+```powershell
+cmake -S . -B build -G Ninja -DCMAKE_C_COMPILER=gcc
+cmake --build build
+```
 
 ## Run
 
