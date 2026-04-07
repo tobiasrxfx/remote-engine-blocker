@@ -3,6 +3,7 @@ add_library(can STATIC
     can_ids.c
     can_codec.c
     can_rx.c
+    can_tx.c
 )
 
 target_include_directories(can
