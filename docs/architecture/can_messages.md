@@ -1,17 +1,26 @@
-# CAN Message Map
+# CAN Message Map — REB Project
 
 ## 1. Purpose
 
 This document defines the CAN communication interface for the Remote Engine Blocker (REB) system.
 
-It specifies:
+It complements the project `.dbc` file by providing:
 
-* message definitions
-* signal layout
+* architectural context
 * timing and timeout rules
-* validation policies
+* signal validation policies
+* simulation-specific extensions
 
-The goal is to provide a **stable communication contract** between all modules.
+**Important:**
+The `.dbc` file is the **source of truth** for:
+
+* CAN IDs
+* signal layout
+* bit positions
+* scaling
+* enumerations
+
+This document must remain consistent with the `.dbc`.
 
 ---
 
@@ -19,13 +28,18 @@ The goal is to provide a **stable communication contract** between all modules.
 
 The following nodes participate in the CAN network:
 
-* `TCU` — Telematics Control Unit (remote commands)
+
 * `REB` — Remote Engine Blocker (core logic)
+
+### Simulation Nodes 
+
+
+* `TCU` — Telematics Control Unit (remote commands)
 * `ECU_FUEL` — Fuel control unit (derating)
 * `ECU_MOTOR` — Engine control unit (start prevention)
-* `BCM` — Body Control Module (intrusion sensors)
-* `PANEL` — Dashboard / user interface
-* `VEHICLE` — Vehicle state simulation (speed, ignition, etc.)
+* `BCM` — Intrusion detection (glass break, door, acceleration)
+* `PANEL` — User interface (manual authentication / cancel)
+* `VEHICLE` — Vehicle state (speed, ignition, RPM)
 
 ---
 
@@ -37,179 +51,146 @@ The following nodes participate in the CAN network:
 
 ---
 
-## 4. CAN ID Allocation
+## 4. CAN ID Allocation (Aligned with DBC)
 
-| Range       | Usage                    |
-| ----------- | ------------------------ |
-| 0x100–0x10F | TCU ↔ REB commands & ACK |
-| 0x110–0x11F | REB → TCU status         |
-| 0x200–0x20F | BCM / PANEL signals      |
-| 0x300–0x30F | Vehicle state            |
-| 0x400–0x40F | REB → actuators          |
-
----
-
-## 5. Message Definitions
+| Message           | ID (hex) | ID (dec) |
+| ----------------- | -------- | -------- |
+| REB_CMD           | 0x200    | 512      |
+| REB_STATUS        | 0x201    | 513      |
+| TCU_TO_REB        | 0x300    | 768      |
+| REB_DERATE_CMD    | 0x400    | 1024     |
+| REB_PREVENT_START | 0x401    | 1025     |
+| REB_GPS_REQUEST   | 0x402    | 1026     |
 
 ---
 
-### BO_ 0x100 REB_CMD: 8 TCU → REB
-
-Remote authenticated command.
-
-| Signal          | Bits  | Description         |
-| --------------- | ----- | ------------------- |
-| cmd_type        | 0–7   | Command type        |
-| auth_ok         | 8–15  | Authentication flag |
-| cmd_nonce       | 16–31 | Anti-replay counter |
-| cmd_timestamp_s | 32–63 | Timestamp (seconds) |
-
-#### cmd_type
-
-* 0 = none
-* 1 = confirm_theft
-* 2 = block
-* 3 = unblock
+## 5. Message Definitions (DBC-Aligned)
 
 ---
 
-### BO_ 0x101 REB_ACK: 4 TCU → REB
+### BO_ 0x200 REB_CMD: 8 TCU → REB
 
-Acknowledgment of command.
+Authenticated command from TCU.
 
-| Signal      | Bits  | Description    |
-| ----------- | ----- | -------------- |
-| ack_id      | 0–7   | Command ID     |
-| ack_ok      | 8–15  | ACK result     |
-| fail_reason | 16–23 | Failure reason |
-| reserved    | 24–31 | Reserved       |
+| Signal        | Description         |
+| ------------- | ------------------- |
+| cmd_type      | Command type        |
+| cmd_mode      | Mode of operation   |
+| cmd_nonce     | Anti-replay counter |
+| cmd_timestamp | Timestamp           |
 
 ---
 
-### BO_ 0x110 REB_STATUS: 8 REB → TCU
+### BO_ 0x201 REB_STATUS: 8 REB → TCU
 
-Periodic system status.
+Periodic REB system status.
 
 **Period: 100 ms**
 
-| Signal          | Bits  | Description     |
-| --------------- | ----- | --------------- |
-| state_id        | 0–7   | REB state       |
-| blocked_flag    | 8–15  | Blocking active |
-| source_trigger  | 16–23 | Trigger source  |
-| derating_active | 24–31 | Derating active |
-| derate_pct      | 32–39 | Derating level  |
-| parked_flag     | 40–47 | Vehicle parked  |
-| fault_code      | 48–55 | Fault indicator |
-| reserved        | 56–63 | Reserved        |
+| Signal        | Description     |
+| ------------- | --------------- |
+| status_code   | REB state       |
+| blocked_flag  | Blocking active |
+| vehicle_speed | Vehicle speed   |
+| error_code    | Error indicator |
+| reserved      | Reserved        |
 
 ---
 
-### BO_ 0x400 REB_DERATE_CMD: 2 REB → ECU_FUEL
+### BO_ 0x300 TCU_TO_REB: 8 TCU → REB
 
-Derating command.
+ACK/NACK response from TCU.
+
+| Signal         | Description               |
+| -------------- | ------------------------- |
+| tcu_cmd        | ACK/NACK/RETRY            |
+| fail_reason    | Failure reason            |
+| echo_timestamp | Echo of command timestamp |
+
+---
+
+### BO_ 0x400 REB_DERATE_CMD: 8 REB → ECU_FUEL
+
+Fuel derating command.
 
 **Period: 500 ms (while active)**
 
-| Signal        | Bits | Description     |
-| ------------- | ---- | --------------- |
-| derate_enable | 0–7  | Enable derating |
-| derate_pct    | 8–15 | Percentage      |
+| Signal      | Description         |
+| ----------- | ------------------- |
+| derate_pct  | Derating percentage |
+| derate_mode | Derating strategy   |
+| safety_flag | Safety indicator    |
 
 ---
 
-### BO_ 0x401 REB_PREVENT_START: 2 REB → ECU_MOTOR
+### BO_ 0x401 REB_PREVENT_START: 8 REB → ECU_MOTOR
 
-Prevent engine start.
+Prevents engine start.
 
-| Signal        | Bits | Description |
-| ------------- | ---- | ----------- |
-| prevent_start | 0–7  | Block start |
-| blocked_flag  | 8–15 | REB active  |
-
----
-
-### BO_ 0x300 VEHICLE_STATE: 8 VEHICLE → REB
-
-Vehicle operational state.
-
-| Signal                | Bits  | Description   |
-| --------------------- | ----- | ------------- |
-| vehicle_speed_kph_x10 | 0–15  | Speed ×10     |
-| ignition_state        | 16–23 | Ignition mode |
-| engine_running        | 24–31 | Engine status |
-| engine_rpm            | 32–47 | RPM           |
-| brake_pedal_pct       | 48–55 | Brake %       |
-| reserved              | 56–63 | Reserved      |
+| Signal         | Description                |
+| -------------- | -------------------------- |
+| prevent_start  | Start allowed/blocked      |
+| auth_token_lsb | Authentication token (LSB) |
 
 ---
 
-### BO_ 0x200 BCM_INTRUSION_STATUS: 4 BCM → REB
+### BO_ 0x402 REB_GPS_REQUEST: 8 REB → TCU
 
-Intrusion detection.
+Request GPS data from TCU.
 
-| Signal           | Bits  | Description      |
-| ---------------- | ----- | ---------------- |
-| glass_break_flag | 0–7   | Glass break      |
-| door_intrusion   | 8–15  | Door intrusion   |
-| accel_peak_flag  | 16–23 | Shock detection  |
-| sensor_score_pct | 24–31 | Confidence score |
+| Signal        | Description       |
+| ------------- | ----------------- |
+| gps_request   | Request flag      |
+| state_id_echo | Current REB state |
 
 ---
 
-### BO_ 0x201 PANEL_AUTH_CMD: 3 PANEL → REB
+## 6. Enumerations (Aligned with DBC)
 
-Manual authentication.
+### cmd_type
 
-| Signal           | Bits  | Description    |
-| ---------------- | ----- | -------------- |
-| manual_auth_ok   | 0–7   | Manual auth    |
-| password_ok      | 8–15  | Password valid |
-| panel_locked_out | 16–23 | Lockout        |
+* 0 = NOP
+* 1 = BLOCK
+* 2 = UNBLOCK
+* 3 = STATUS_REQUEST
 
----
+### cmd_mode
 
-### BO_ 0x202 PANEL_CANCEL_CMD: 2 PANEL → REB
+* 0 = IDLE_MODE
+* 1 = GRADUAL_DERATE
+* 2 = FULL_BLOCK
+* 3 = EMERGENCY
 
-Cancel request.
-
-| Signal         | Bits | Description     |
-| -------------- | ---- | --------------- |
-| cancel_request | 0–7  | Cancel          |
-| owner_confirm  | 8–15 | Owner confirmed |
-
----
-
-## 6. Enumerations
-
-### state_id
+### status_code
 
 * 0 = IDLE
 * 1 = THEFT_CONFIRMED
 * 2 = BLOCKING
 * 3 = BLOCKED
 
-### source_trigger
+### tcu_cmd
 
-* 0 = NONE
-* 1 = REMOTE
-* 2 = PANEL
-* 3 = AUTO_SENSOR
+* 0 = ACK
+* 1 = NACK
+* 2 = RETRY
+* 3 = FAIL
 
-### ignition_state
+### derate_mode
 
 * 0 = OFF
-* 1 = ACC
-* 2 = ON
+* 1 = GRADUAL_RAMP
+* 2 = STEP
+* 3 = IMMEDIATE
 
-### fail_reason
+### prevent_start
 
-* 0 = NONE
-* 1 = AUTH_FAILED
-* 2 = NONCE_REPLAY
-* 3 = STALE_TIMESTAMP
-* 4 = INVALID_SIGNAL
-* 5 = ACK_TIMEOUT
+* 0 = ALLOW
+* 1 = BLOCK
+
+### gps_request
+
+* 0 = NO_REQUEST
+* 1 = REQUEST_GPS
 
 ---
 
@@ -218,52 +199,69 @@ Cancel request.
 | Message           | Period | Timeout | Behavior       |
 | ----------------- | ------ | ------- | -------------- |
 | REB_CMD           | event  | 1000 ms | reject stale   |
-| REB_ACK           | event  | 500 ms  | retry/fail     |
+| TCU_TO_REB        | event  | 500 ms  | retry/fail     |
 | REB_STATUS        | 100 ms | 300 ms  | mark stale     |
 | REB_DERATE_CMD    | 500 ms | 1000 ms | disable safely |
 | REB_PREVENT_START | event  | 1000 ms | hold safe      |
-| VEHICLE_STATE     | 100 ms | 300 ms  | inhibit unsafe |
-| BCM_INTRUSION     | event  | 1000 ms | ignore stale   |
-| PANEL_AUTH        | event  | 1000 ms | ignore stale   |
-| PANEL_CANCEL      | event  | 1000 ms | ignore stale   |
+| REB_GPS_REQUEST   | event  | 1000 ms | retry optional |
 
 ---
 
 ## 8. Validation Rules
 
-* `REB_CMD` is accepted only if:
+### REB_CMD
 
-  * `auth_ok == 1`
-  * nonce is not reused
-  * timestamp is valid
+* must have valid nonce (no replay)
+* timestamp must be fresh
+* command must be recognized
 
-* `VEHICLE_STATE`:
+### TCU_TO_REB (ACK)
 
-  * must be fresh to allow state transitions
-  * invalid data blocks unsafe actions
+* must match a previous command
+* timeout triggers retry or failure
 
-* `REB_PREVENT_START`:
+### REB_STATUS
 
-  * must never be issued while vehicle speed > 0
+* must be transmitted periodically
+* stale status must be detected by TCU
 
-* `REB_DERATE_CMD`:
+### REB_DERATE_CMD
 
-  * must respect minimum safe torque limit
+* must respect safety limits
+* must not exceed defined derate range
 
-* All frames:
+### REB_PREVENT_START
 
-  * must have correct DLC
-  * must match expected ID
-  * must pass signal validation
+* must never be issued while vehicle is moving
+
+### General Rules
+
+* DLC must match expected size
+* unknown IDs must be ignored
+* invalid frames must be rejected
 
 ---
 
-## 9. Notes
+## 9. Simulation Extensions (Not Yet in DBC)
 
-This specification represents the **initial version of the CAN interface**.
+The following messages are required for the virtual vehicle simulation but are not yet defined in the `.dbc`:
 
-It must be reviewed and approved before:
+* `VEHICLE_STATE`
+* `BCM_INTRUSION_STATUS`
+* `PANEL_AUTH_CMD`
+* `PANEL_CANCEL_CMD`
 
-* implementing pack/unpack logic
-* integrating REB core
-* developing simulation modules
+These should be added in a future DBC revision.
+
+---
+
+## 10. Notes
+
+This document represents the **initial CAN architecture specification**.
+
+Before implementation:
+
+* message definitions must be validated by the team
+* inconsistencies between `.dbc` and this document must be resolved
+
+The `.dbc` remains the authoritative source for frame encoding.
