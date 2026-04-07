@@ -45,7 +45,9 @@ typedef enum
     CAN_MSG_TCU_TO_REB,
     CAN_MSG_REB_DERATE_CMD,
     CAN_MSG_REB_PREVENT_START,
-    CAN_MSG_REB_GPS_REQUEST
+    CAN_MSG_REB_GPS_REQUEST,
+
+    CAN_MSG_COUNT
 
 } can_msg_id_t;
 

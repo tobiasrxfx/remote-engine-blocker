@@ -4,6 +4,7 @@ add_library(can STATIC
     can_codec.c
     can_rx.c
     can_tx.c
+    can_monitor.c
 )
 
 target_include_directories(can
