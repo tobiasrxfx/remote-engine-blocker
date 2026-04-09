@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include <string.h>
 
-#ifndef _WIN32
+#if !defined(_WIN32) || defined(__CYGWIN__)
 #include <sys/socket.h>
 #include <sys/types.h>
 #endif
@@ -142,7 +142,7 @@ can_socket_transport_status_t can_socket_transport_startup(
         return CAN_SOCKET_TRANSPORT_STATUS_OK;
     }
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__CYGWIN__)
     {
         WSADATA wsa_data;
         const int result = WSAStartup(MAKEWORD(2, 2), &wsa_data);
@@ -172,7 +172,7 @@ can_socket_transport_status_t can_socket_transport_shutdown(
         return CAN_SOCKET_TRANSPORT_STATUS_OK;
     }
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__CYGWIN__)
     if (WSACleanup() != 0)
     {
         return CAN_SOCKET_TRANSPORT_STATUS_SOCKET_ERROR;

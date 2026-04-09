@@ -7,7 +7,7 @@
 
 #include "can_frame.h"
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__CYGWIN__)
 #include <winsock2.h>
 typedef SOCKET can_socket_transport_socket_t;
 #define CAN_SOCKET_TRANSPORT_INVALID_SOCKET    INVALID_SOCKET
