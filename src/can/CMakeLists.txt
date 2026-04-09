@@ -5,6 +5,7 @@ add_library(can STATIC
     can_rx.c
     can_tx.c
     can_monitor.c
+    can_socket_transport.c
 )
 
 target_include_directories(can
@@ -16,3 +17,7 @@ target_link_libraries(can
     PUBLIC
         common
 )
+
+if(WIN32)
+    target_link_libraries(can PRIVATE ws2_32)
+endif()
