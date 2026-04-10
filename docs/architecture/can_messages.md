@@ -53,14 +53,18 @@ The following nodes participate in the CAN network:
 
 ## 4. CAN ID Allocation (Aligned with DBC)
 
-| Message           | ID (hex) | ID (dec) |
-| ----------------- | -------- | -------- |
-| REB_CMD           | 0x200    | 512      |
-| REB_STATUS        | 0x201    | 513      |
-| TCU_TO_REB        | 0x300    | 768      |
-| REB_DERATE_CMD    | 0x400    | 1024     |
-| REB_PREVENT_START | 0x401    | 1025     |
-| REB_GPS_REQUEST   | 0x402    | 1026     |
+| Message               | ID (hex) | ID (dec) |
+| --------------------- | -------- | -------- |
+| REB_CMD               | 0x200    | 512      |
+| REB_STATUS            | 0x201    | 513      |
+| TCU_TO_REB            | 0x300    | 768      |
+| REB_DERATE_CMD        | 0x400    | 1024     |
+| REB_PREVENT_START     | 0x401    | 1025     |
+| REB_GPS_REQUEST       | 0x402    | 1026     |
+| VEHICLE_STATE         | 0x500    | 1280     |
+| BCM_INTRUSION_STATUS  | 0x501    | 1281     |
+| PANEL_AUTH_CMD        | 0x502    | 1282     |
+| PANEL_CANCEL_CMD      | 0x503    | 1283     |
 
 ---
 
@@ -145,7 +149,66 @@ Request GPS data from TCU.
 
 ---
 
-## 6. Enumerations (Aligned with DBC)
+### BO_ 0x500 VEHICLE_STATE: 8 VEHICLE → REB
+
+Periodic vehicle operating state used by REB decision logic.
+
+**Period: 100 ms**
+
+| Signal            | Description             |
+| ----------------- | ----------------------- |
+| vehicle_speed     | Current vehicle speed   |
+| ignition_on       | Ignition state          |
+| engine_running    | Engine running flag     |
+| engine_rpm        | Current engine RPM      |
+| reserved_vehicle  | Reserved                |
+
+---
+
+### BO_ 0x501 BCM_INTRUSION_STATUS: 8 BCM → REB
+
+Periodic intrusion and tamper status from BCM.
+
+**Period: 100 ms**
+
+| Signal           | Description                  |
+| ---------------- | ---------------------------- |
+| door_open        | Door intrusion flag          |
+| glass_break      | Glass break detection        |
+| shock_detected   | Acceleration/shock detection |
+| intrusion_level  | Intrusion severity           |
+| reserved_bcm     | Reserved                     |
+
+---
+
+### BO_ 0x502 PANEL_AUTH_CMD: 8 PANEL → REB
+
+Local authentication request from user panel.
+
+| Signal               | Description                  |
+| -------------------- | ---------------------------- |
+| auth_request         | Authentication request flag  |
+| auth_method          | Authentication method        |
+| auth_nonce           | Event nonce / anti-duplicate |
+| reserved_panel_auth  | Reserved                     |
+
+---
+
+### BO_ 0x503 PANEL_CANCEL_CMD: 8 PANEL → REB
+
+Manual cancel request from user panel.
+
+| Signal                 | Description                  |
+| ---------------------- | ---------------------------- |
+| cancel_request         | Cancel request flag          |
+| cancel_reason          | Reason for cancellation      |
+| cancel_nonce           | Event nonce / anti-duplicate |
+| reserved_panel_cancel  | Reserved                     |
+
+
+---
+
+## 6. Enumerations
 
 ### cmd_type
 
@@ -192,18 +255,43 @@ Request GPS data from TCU.
 * 0 = NO_REQUEST
 * 1 = REQUEST_GPS
 
+### intrusion_level
+
+* 0 = NONE
+* 1 = LOW
+* 2 = MEDIUM
+* 3 = HIGH
+
+### auth_method
+
+* 0 = UNKNOWN
+* 1 = LOCAL_BUTTON
+* 2 = PIN
+* 3 = SERVICE_OVERRIDE
+
+### cancel_reason
+
+* 0 = USER_REQUEST
+* 1 = FALSE_ALARM
+* 2 = MAINTENANCE
+* 3 = SAFETY_ABORT
 ---
 
 ## 7. Timing and Timeout Rules
 
-| Message           | Period | Timeout | Behavior       |
-| ----------------- | ------ | ------- | -------------- |
-| REB_CMD           | event  | 1000 ms | reject stale   |
-| TCU_TO_REB        | event  | 500 ms  | retry/fail     |
-| REB_STATUS        | 100 ms | 300 ms  | mark stale     |
-| REB_DERATE_CMD    | 500 ms | 1000 ms | disable safely |
-| REB_PREVENT_START | event  | 1000 ms | hold safe      |
-| REB_GPS_REQUEST   | event  | 1000 ms | retry optional |
+| Message               | Period | Timeout | Behavior       |
+| --------------------- | ------ | ------- | -------------- |
+| REB_CMD               | event  | 1000 ms | reject stale   |
+| TCU_TO_REB            | event  | 500 ms  | retry/fail     |
+| REB_STATUS            | 100 ms | 300 ms  | mark stale     |
+| REB_DERATE_CMD        | 500 ms | 1000 ms | disable safely |
+| REB_PREVENT_START     | event  | 1000 ms | hold safe      |
+| REB_GPS_REQUEST       | event  | 1000 ms | retry optional |
+| VEHICLE_STATE         | 100 ms | 300 ms  | enter safe mode if stale          |
+| BCM_INTRUSION_STATUS  | 100 ms | 300 ms  | use last valid / clear after timeout |
+| PANEL_AUTH_CMD        | event  | 500 ms  | process once, ignore duplicate nonce |
+| PANEL_CANCEL_CMD      | event  | 500 ms  | process once, ignore duplicate nonce |
+
 
 ---
 
@@ -234,6 +322,30 @@ Request GPS data from TCU.
 
 * must never be issued while vehicle is moving
 
+### VEHICLE_STATE
+
+* speed and RPM must be within valid ranges
+* stale vehicle state must be detected
+* blocking actions that depend on motion must use the last valid vehicle state
+
+### BCM_INTRUSION_STATUS
+
+* intrusion flags must be individually decodable
+* timeout must clear stale intrusion data or mark it invalid
+
+### PANEL_AUTH_CMD
+
+* auth_request must be recognized
+* duplicate auth_nonce must be ignored
+* invalid method must be rejected
+
+### PANEL_CANCEL_CMD
+
+* cancel_request must be recognized
+* duplicate cancel_nonce must be ignored
+* invalid reason must be rejected
+
+
 ### General Rules
 
 * DLC must match expected size
@@ -242,20 +354,7 @@ Request GPS data from TCU.
 
 ---
 
-## 9. Simulation Extensions (Not Yet in DBC)
-
-The following messages are required for the virtual vehicle simulation but are not yet defined in the `.dbc`:
-
-* `VEHICLE_STATE`
-* `BCM_INTRUSION_STATUS`
-* `PANEL_AUTH_CMD`
-* `PANEL_CANCEL_CMD`
-
-These should be added in a future DBC revision.
-
----
-
-## 10. Notes
+## 9. Notes
 
 This document represents the **initial CAN architecture specification**.
 
