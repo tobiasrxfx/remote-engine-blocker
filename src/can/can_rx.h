@@ -37,6 +37,11 @@ typedef struct
     {
         can_reb_cmd_t reb_cmd;
         can_tcu_to_reb_t tcu_to_reb;
+        can_vehicle_state_t vehicle_state;
+        can_bcm_intrusion_status_t bcm_intrusion;
+        can_panel_auth_cmd_t panel_auth;
+        can_panel_cancel_cmd_t panel_cancel;
+        
     } data;
 } can_rx_message_t;
 

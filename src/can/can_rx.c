@@ -97,6 +97,30 @@ can_rx_status_t can_rx_process_frame(
                 &out_msg->data.tcu_to_reb);
             return can_rx_map_codec_status(codec_status);
 
+        case CAN_MSG_VEHICLE_STATE:
+            codec_status = can_codec_decode_vehicle_state(
+                frame,
+                &out_msg->data.vehicle_state);
+            return can_rx_map_codec_status(codec_status);
+
+        case CAN_MSG_BCM_INTRUSION_STATUS:
+            codec_status = can_codec_decode_bcm_intrusion_status(
+                frame,
+                &out_msg->data.bcm_intrusion);
+            return can_rx_map_codec_status(codec_status);
+
+        case CAN_MSG_PANEL_AUTH_CMD:
+            codec_status = can_codec_decode_panel_auth_cmd(
+                frame,
+                &out_msg->data.panel_auth);
+            return can_rx_map_codec_status(codec_status);
+
+        case CAN_MSG_PANEL_CANCEL_CMD:
+            codec_status = can_codec_decode_panel_cancel_cmd(
+                frame,
+                &out_msg->data.panel_cancel);
+            return can_rx_map_codec_status(codec_status);
+
         case CAN_MSG_REB_STATUS:
         case CAN_MSG_REB_DERATE_CMD:
         case CAN_MSG_REB_PREVENT_START:
