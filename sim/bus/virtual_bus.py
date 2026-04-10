@@ -29,6 +29,7 @@ def start_virtual_bus():
     print(" [INFO] Press Ctrl+C to shut down safely.")
     print(" Waiting for modules to connect...")
 
+    dashboard_addr = None
     try:
         while True:
             try:
@@ -47,7 +48,12 @@ def start_virtual_bus():
             # This simulates the shared nature of a real CAN bus
             message = data.decode().strip()
             for client_addr in clients:
-                if client_addr != addr:
+
+                is_dashboard = "DASHBOARD_CONNECTED" in message or addr == dashboard_addr
+                if is_dashboard:
+                    dashboard_addr = addr
+
+                if client_addr == dashboard_addr or client_addr != addr:
                     try:
                         bus_socket.sendto(data, client_addr)
                     except Exception as e:
