@@ -5,7 +5,7 @@
 /**
  * @brief Total number of known DBC-aligned CAN messages.
  */
-#define CAN_IDS_MESSAGE_COUNT    (6U)
+#define CAN_IDS_MESSAGE_COUNT    (10U)
 
 /**
  * @brief Static lookup table for all known CAN messages.
@@ -79,6 +79,50 @@ static const can_msg_desc_t g_can_msg_table[CAN_IDS_MESSAGE_COUNT] =
         .direction = CAN_DIRECTION_TX,
         .period_ms = CAN_PERIOD_EVENT_MS,
         .timeout_ms = 1000U,
+        .mandatory = false
+    },
+    {
+        .msg_id = CAN_MSG_VEHICLE_STATE,
+        .can_id = 0x500U,
+        .id_type = CAN_ID_TYPE_STANDARD,
+        .dlc = 8U,
+        .producer = CAN_NODE_VEHICLE,
+        .direction = CAN_DIRECTION_RX,
+        .period_ms = 100U,
+        .timeout_ms = 300U,
+        .mandatory = true
+    },
+    {
+        .msg_id = CAN_MSG_BCM_INTRUSION_STATUS,
+        .can_id = 0x501U,
+        .id_type = CAN_ID_TYPE_STANDARD,
+        .dlc = 8U,
+        .producer = CAN_NODE_BCM,
+        .direction = CAN_DIRECTION_RX,
+        .period_ms = 100U,
+        .timeout_ms = 300U,
+        .mandatory = false
+    },
+    {
+        .msg_id = CAN_MSG_PANEL_AUTH_CMD,
+        .can_id = 0x502U,
+        .id_type = CAN_ID_TYPE_STANDARD,
+        .dlc = 8U,
+        .producer = CAN_NODE_PANEL,
+        .direction = CAN_DIRECTION_RX,
+        .period_ms = CAN_PERIOD_EVENT_MS,
+        .timeout_ms = 500U,
+        .mandatory = false
+    },
+    {
+        .msg_id = CAN_MSG_PANEL_CANCEL_CMD,
+        .can_id = 0x503U,
+        .id_type = CAN_ID_TYPE_STANDARD,
+        .dlc = 8U,
+        .producer = CAN_NODE_PANEL,
+        .direction = CAN_DIRECTION_RX,
+        .period_ms = CAN_PERIOD_EVENT_MS,
+        .timeout_ms = 500U,
         .mandatory = false
     }
 };
