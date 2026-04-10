@@ -98,6 +98,39 @@ typedef enum
 } can_gps_request_t;
 
 /**
+ * @brief Intrusion level values.
+ */
+typedef enum
+{
+    CAN_INTRUSION_NONE = 0,
+    CAN_INTRUSION_LOW = 1,
+    CAN_INTRUSION_MEDIUM = 2,
+    CAN_INTRUSION_HIGH = 3
+} can_intrusion_level_t;
+
+/**
+ * @brief Authentication method values.
+ */
+typedef enum
+{
+    CAN_AUTH_METHOD_UNKNOWN = 0,
+    CAN_AUTH_METHOD_LOCAL_BUTTON = 1,
+    CAN_AUTH_METHOD_PIN = 2,
+    CAN_AUTH_METHOD_SERVICE_OVERRIDE = 3
+} can_auth_method_t;
+
+/**
+ * @brief Cancel reason values.
+ */
+typedef enum
+{
+    CAN_CANCEL_USER = 0,
+    CAN_CANCEL_FALSE_ALARM = 1,
+    CAN_CANCEL_MAINTENANCE = 2,
+    CAN_CANCEL_SAFETY_ABORT = 3
+} can_cancel_reason_t;
+
+/**
  * @brief Logical representation of REB_CMD.
  */
 typedef struct
@@ -162,6 +195,48 @@ typedef struct
 } can_reb_gps_request_t;
 
 /**
+ * @brief VEHICLE_STATE message.
+ */
+typedef struct
+{
+    uint16_t vehicle_speed_centi_kmh;
+    uint8_t ignition_on;
+    uint8_t engine_running;
+    uint16_t engine_rpm;
+} can_vehicle_state_t;
+
+/**
+ * @brief BCM_INTRUSION_STATUS message.
+ */
+typedef struct
+{
+    uint8_t door_open;
+    uint8_t glass_break;
+    uint8_t shock_detected;
+    can_intrusion_level_t intrusion_level;
+} can_bcm_intrusion_status_t;
+
+/**
+ * @brief PANEL_AUTH_CMD message.
+ */
+typedef struct
+{
+    uint8_t auth_request;
+    can_auth_method_t auth_method;
+    uint16_t auth_nonce;
+} can_panel_auth_cmd_t;
+
+/**
+ * @brief PANEL_CANCEL_CMD message.
+ */
+typedef struct
+{
+    uint8_t cancel_request;
+    can_cancel_reason_t cancel_reason;
+    uint16_t cancel_nonce;
+} can_panel_cancel_cmd_t;
+
+/**
  * @brief Decode a REB_CMD frame.
  */
 can_codec_status_t can_codec_decode_reb_cmd(
@@ -202,6 +277,34 @@ can_codec_status_t can_codec_encode_reb_prevent_start(
 can_codec_status_t can_codec_encode_reb_gps_request(
     const can_reb_gps_request_t *msg,
     can_frame_t *frame);
+
+/**
+ * @brief Decode a VEHICLE_STATE frame.
+ */
+can_codec_status_t can_codec_decode_vehicle_state(
+    const can_frame_t *frame,
+    can_vehicle_state_t *msg);
+
+/**
+ * @brief Decode a BCM_INTRUSION_STATUS frame.
+ */
+can_codec_status_t can_codec_decode_bcm_intrusion_status(
+    const can_frame_t *frame,
+    can_bcm_intrusion_status_t *msg);
+
+/**
+ * @brief Decode a PANEL_AUTH_CMD frame.
+ */
+can_codec_status_t can_codec_decode_panel_auth_cmd(
+    const can_frame_t *frame,
+    can_panel_auth_cmd_t *msg);
+
+/**
+ * @brief Decode a PANEL_CANCEL_CMD frame.
+ */
+can_codec_status_t can_codec_decode_panel_cancel_cmd(
+    const can_frame_t *frame,
+    can_panel_cancel_cmd_t *msg);
 
 #ifdef __cplusplus
 }

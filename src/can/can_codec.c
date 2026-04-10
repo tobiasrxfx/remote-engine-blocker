@@ -427,3 +427,103 @@ can_codec_status_t can_codec_encode_reb_gps_request(
 
     return CAN_CODEC_STATUS_OK;
 }
+
+
+can_codec_status_t can_codec_decode_vehicle_state(
+    const can_frame_t *frame,
+    can_vehicle_state_t *msg)
+{
+    can_codec_status_t status;
+
+    if (msg == NULL)
+    {
+        return CAN_CODEC_STATUS_NULL_POINTER;
+    }
+
+    status = can_codec_validate_rx_frame(frame, CAN_MSG_VEHICLE_STATE);
+    if (status != CAN_CODEC_STATUS_OK)
+    {
+        return status;
+    }
+
+    msg->vehicle_speed_centi_kmh = can_codec_read_u16_le(&frame->data[0]);
+    msg->ignition_on = frame->data[2];
+    msg->engine_running = frame->data[3];
+    msg->engine_rpm = can_codec_read_u16_le(&frame->data[4]);
+
+    return CAN_CODEC_STATUS_OK;
+}
+
+can_codec_status_t can_codec_decode_bcm_intrusion_status(
+    const can_frame_t *frame,
+    can_bcm_intrusion_status_t *msg)
+{
+    can_codec_status_t status;
+
+    if (msg == NULL)
+    {
+        return CAN_CODEC_STATUS_NULL_POINTER;
+    }
+
+    status = can_codec_validate_rx_frame(frame, CAN_MSG_BCM_INTRUSION_STATUS);
+    if (status != CAN_CODEC_STATUS_OK)
+    {
+        return status;
+    }
+
+    msg->door_open = frame->data[0];
+    msg->glass_break = frame->data[1];
+    msg->shock_detected = frame->data[2];
+    msg->intrusion_level = (can_intrusion_level_t)frame->data[3];
+
+    return CAN_CODEC_STATUS_OK;
+}
+
+
+can_codec_status_t can_codec_decode_panel_auth_cmd(
+    const can_frame_t *frame,
+    can_panel_auth_cmd_t *msg)
+{
+    can_codec_status_t status;
+
+    if (msg == NULL)
+    {
+        return CAN_CODEC_STATUS_NULL_POINTER;
+    }
+
+    status = can_codec_validate_rx_frame(frame, CAN_MSG_PANEL_AUTH_CMD);
+    if (status != CAN_CODEC_STATUS_OK)
+    {
+        return status;
+    }
+
+    msg->auth_request = frame->data[0];
+    msg->auth_method = (can_auth_method_t)frame->data[1];
+    msg->auth_nonce = can_codec_read_u16_le(&frame->data[2]);
+
+    return CAN_CODEC_STATUS_OK;
+}
+
+can_codec_status_t can_codec_decode_panel_cancel_cmd(
+    const can_frame_t *frame,
+    can_panel_cancel_cmd_t *msg)
+{
+    can_codec_status_t status;
+
+    if (msg == NULL)
+    {
+        return CAN_CODEC_STATUS_NULL_POINTER;
+    }
+
+    status = can_codec_validate_rx_frame(frame, CAN_MSG_PANEL_CANCEL_CMD);
+    if (status != CAN_CODEC_STATUS_OK)
+    {
+        return status;
+    }
+
+    msg->cancel_request = frame->data[0];
+    msg->cancel_reason = (can_cancel_reason_t)frame->data[1];
+    msg->cancel_nonce = can_codec_read_u16_le(&frame->data[2]);
+
+    return CAN_CODEC_STATUS_OK;
+}
