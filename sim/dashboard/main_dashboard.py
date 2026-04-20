@@ -2,10 +2,11 @@ import sys
 import socket
 import threading
 import os
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QHBoxLayout, QFrame
-from PySide6.QtCore import Qt, Signal, Slot
+from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
+                               QLabel, QPushButton, QHBoxLayout, QFrame, QGroupBox)
+from PySide6.QtCore import Qt, Signal, Slot, QTimer
 
-# Path setup to ensure we can import from directories (bcm, bus)
+# Configuração de caminhos para importação
 root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 if root_path not in sys.path:
     sys.path.append(root_path)
@@ -18,102 +19,157 @@ class DashboardWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("HMI - Remote Engine Blocker (SWT3)")
-        self.resize(700, 550)
+        self.setWindowTitle("Advanced HMI Simulation - REB System")
+        self.resize(1000, 600)
+        self.setStyleSheet("QMainWindow { background-color: #121212; }")
 
-        # Configuration for Virtual CAN Bus
+        # Comunicação
         self.bus_addr = ('127.0.0.1', 5000)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        # O bind em 0 permite que o SO escolha a porta, igual ao vehicle_plant
         self.socket.bind(('127.0.0.1', 0))
 
-        # Modules
+        # Módulos
         self.bcm = BCMModule(self.socket, self.bus_addr)
         self.tcu = TCUModule(self.socket, self.bus_addr)
 
-        # UI Setup
+        # Lógica de Animação (Pisca-Alerta)
+        self.blink_timer = QTimer()
+        self.blink_timer.timeout.connect(self.toggle_blinkers)
+        self.blink_state = False
+
         self.init_ui()
 
-        # Comunnication Setup
+        # Threads e Sinais
         self.can_msg_received.connect(self.update_ui)
-        self.listen_thread = threading.Thread(target=self.receive_can_frames, daemon=True)
-        self.listen_thread.start()
+        threading.Thread(target=self.receive_can_frames, daemon=True).start()
 
-        # Initial message to identify dashboard on the bus
-        self.send_can_raw("000:DASHBOARD_CONNECTED")
+        self.send_can_raw("000:DASHBOARD_V2_CONNECTED")
 
     def init_ui(self):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-        layout = QVBoxLayout(central_widget)
+        main_layout = QHBoxLayout(central_widget) # Divisão Horizontal (Painel vs Celular)
 
-        # Telemetry Display
-        telemetry_layout = QHBoxLayout()
-        
-        # Velocity Display
-        self.speed_frame = QFrame()
-        self.speed_frame.setFrameStyle(QFrame.StyledPanel | QFrame.Sunken)
-        speed_vbox = QVBoxLayout(self.speed_frame)
+        # ==========================================
+        # LADO ESQUERDO: PAINEL DO CARRO (CLUSTER)
+        # ==========================================
+        cluster_container = QVBoxLayout()
+
+        self.cluster_frame = QFrame()
+        self.cluster_frame.setStyleSheet("""
+            QFrame {
+                background-color: #000000;
+                border: 3px solid #333333;
+                border-radius: 40px;
+            }
+        """)
+        cluster_inner_layout = QVBoxLayout(self.cluster_frame)
+
+        # Indicadores de Direção (Setas)
+        blinkers_layout = QHBoxLayout()
+        self.left_arrow = QLabel("⬅")
+        self.right_arrow = QLabel("➡")
+        arrow_style = "font-size: 50px; color: #111111; font-weight: bold;" # Cor 'apagada' inicial
+        self.left_arrow.setStyleSheet(arrow_style)
+        self.right_arrow.setStyleSheet(arrow_style)
+
+        blinkers_layout.addWidget(self.left_arrow)
+        blinkers_layout.addStretch()
+        blinkers_layout.addWidget(self.right_arrow)
+        cluster_inner_layout.addLayout(blinkers_layout)
+
+        # Velocímetro Central
         self.lbl_speed = QLabel("0")
-        self.lbl_speed.setStyleSheet("font-size: 72px; font-weight: bold; color: #00FF00;")
+        self.lbl_speed.setStyleSheet("font-size: 110px; font-weight: bold; color: #00FF00; border: none;")
         self.lbl_speed.setAlignment(Qt.AlignCenter)
-        speed_vbox.addWidget(QLabel("SPEED (KM/H)"))
-        speed_vbox.addWidget(self.lbl_speed)
-        telemetry_layout.addWidget(self.speed_frame)
+        lbl_unit = QLabel("km/h")
+        lbl_unit.setStyleSheet("color: #00FF00; font-size: 20px; border: none;")
+        lbl_unit.setAlignment(Qt.AlignCenter)
 
-        # Status Display
-        self.status_frame = QFrame()
-        self.status_frame.setFrameStyle(QFrame.StyledPanel | QFrame.Sunken)
-        status_vbox = QVBoxLayout(self.status_frame)
-        self.lbl_reb_state = QLabel("IDLE")
-        self.lbl_reb_state.setStyleSheet("font-size: 24px; font-weight: bold; color: gray;")
-        self.lbl_reb_state.setAlignment(Qt.AlignCenter)
-        
-        self.lbl_alerts = QLabel("ALERTS: OFF")
-        self.lbl_alerts.setStyleSheet("font-size: 14px; color: gray;")
-        self.lbl_alerts.setAlignment(Qt.AlignCenter)
-        
-        status_vbox.addWidget(QLabel("REB SYSTEM STATUS"))
-        status_vbox.addWidget(self.lbl_reb_state)
-        status_vbox.addWidget(self.lbl_alerts)
-        telemetry_layout.addWidget(self.status_frame)
+        cluster_inner_layout.addWidget(self.lbl_speed)
+        cluster_inner_layout.addWidget(lbl_unit)
 
-        layout.addLayout(telemetry_layout)
+        # Status e Alertas Sonoros Visuais
+        self.lbl_reb_status = QLabel("SYSTEM READY")
+        self.lbl_reb_status.setStyleSheet("color: #AAAAAA; font-size: 18px; font-weight: bold; border: none;")
+        self.lbl_reb_status.setAlignment(Qt.AlignCenter)
 
-        # Buttons
-        # BCM Button
-        self.btn_bcm_theft = QPushButton("SIMULATE BCM INTRUSION (0x501)")
-        self.btn_bcm_theft.setFixedHeight(50)
-        self.btn_bcm_theft.setStyleSheet("background-color: #555500; color: white; font-weight: bold;")
-        # Usamos lambda para garantir que o clique chame a função corretamente
-        self.btn_bcm_theft.clicked.connect(lambda: self.bcm.trigger_intrusion())
-        layout.addWidget(self.btn_bcm_theft)
+        self.lbl_horn_indicator = QLabel("📯 HORN ACTIVE")
+        self.lbl_horn_indicator.setStyleSheet("color: #FF0000; font-size: 16px; font-weight: bold; border: none;")
+        self.lbl_horn_indicator.hide() # Escondido por padrão
 
-        # TCU Button
-        self.btn_theft = QPushButton("SIMULATE REMOTE THEFT (0x200)")
-        self.btn_theft.setFixedHeight(50)
-        self.btn_theft.setStyleSheet("background-color: #AA0000; color: white; font-weight: bold;")
-        self.btn_theft.clicked.connect(self.send_theft_command)
-        layout.addWidget(self.btn_theft)
+        cluster_inner_layout.addWidget(self.lbl_reb_status)
+        cluster_inner_layout.addWidget(self.lbl_horn_indicator)
+        cluster_inner_layout.addStretch()
 
-        # Console Log
-        self.console = QLabel("Awaiting telemetry...")
-        self.console.setStyleSheet("background-color: black; color: #00FF00; font-family: Consolas; padding: 10px;")
-        self.console.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        self.console.setWordWrap(True)
-        self.console.setMinimumHeight(150)
-        layout.addWidget(self.console)
+        cluster_container.addWidget(self.cluster_frame)
+
+        # Botão BCM (Simulação Física no Carro)
+        self.btn_bcm = QPushButton("💥 SIMULATE IMPACT / GLASS BREAK")
+        self.btn_bcm.setStyleSheet("background-color: #444; color: white; padding: 10px; border-radius: 5px;")
+        self.btn_bcm.clicked.connect(self.bcm.trigger_intrusion)
+        cluster_container.addWidget(self.btn_bcm)
+
+        main_layout.addLayout(cluster_container, 70) # 70% da largura para o carro
+
+        # ==========================================
+        # LADO DIREITO: CELULAR (TCU APP)
+        # ==========================================
+        phone_container = QVBoxLayout()
+
+        self.phone_frame = QFrame()
+        self.phone_frame.setFixedWidth(280)
+        self.phone_frame.setStyleSheet("""
+            QFrame {
+                background-color: #222222;
+                border: 8px solid #444444;
+                border-radius: 30px;
+            }
+        """)
+        phone_layout = QVBoxLayout(self.phone_frame)
+
+        phone_title = QLabel("REB MOBILE APP")
+        phone_title.setStyleSheet("color: white; font-weight: bold; font-size: 16px; border: none;")
+        phone_title.setAlignment(Qt.AlignCenter)
+        phone_layout.addWidget(phone_title)
+        phone_layout.addSpacing(40)
+
+        self.btn_remote_block = QPushButton("🔒 REMOTE BLOCK")
+        self.btn_remote_block.setFixedHeight(80)
+        self.btn_remote_block.setStyleSheet("""
+            QPushButton { background-color: #AA0000; color: white; font-weight: bold; border-radius: 15px; border: none; }
+            QPushButton:pressed { background-color: #660000; }
+        """)
+        self.btn_remote_block.clicked.connect(self.tcu.send_remote_block)
+
+        self.btn_remote_unblock = QPushButton("🔓 UNLOCK VEHICLE")
+        self.btn_remote_unblock.setFixedHeight(80)
+        self.btn_remote_unblock.setStyleSheet("""
+            QPushButton { background-color: #0055AA; color: white; font-weight: bold; border-radius: 15px; border: none; }
+            QPushButton:pressed { background-color: #003366; }
+        """)
+        self.btn_remote_unblock.clicked.connect(self.tcu.send_remote_unblock)
+
+        phone_layout.addWidget(self.btn_remote_block)
+        phone_layout.addSpacing(20)
+        phone_layout.addWidget(self.btn_remote_unblock)
+        phone_layout.addStretch()
+
+        phone_container.addWidget(self.phone_frame)
+        main_layout.addLayout(phone_container, 30) # 30% da largura para o celular
+
+    def toggle_blinkers(self):
+        """Alterna a cor das setas para simular o pisca-alerta."""
+        self.blink_state = not self.blink_state
+        color = "#00FF00" if self.blink_state else "#111111"
+        self.left_arrow.setStyleSheet(f"font-size: 50px; color: {color}; font-weight: bold; border: none;")
+        self.right_arrow.setStyleSheet(f"font-size: 50px; color: {color}; font-weight: bold; border: none;")
 
     def send_can_raw(self, message):
-        """Sends a raw CAN message to the bus."""
         try:
             self.socket.sendto(message.encode(), self.bus_addr)
-            print(f"[DASHBOARD] Sent: {message}") 
-        except Exception as e:
-            print(f"[DASHBOARD ERROR] {e}")
-
-    def send_theft_command(self):
-        self.tcu.send_remote_block()
+        except:
+            pass
 
     def receive_can_frames(self):
         while True:
@@ -123,43 +179,44 @@ class DashboardWindow(QMainWindow):
                 if ":" in raw_msg:
                     can_id, payload = raw_msg.split(":")
                     self.can_msg_received.emit(can_id, payload, raw_msg)
-            except Exception as e:
-                print(f"Receive Error: {e}")
+            except:
                 break
 
     @Slot(str, str, str)
     def update_ui(self, can_id, payload, full_msg):
-        current_lines = self.console.text().split("\n")[:8]
-        self.console.setText(f"[RX] {full_msg}\n" + "\n".join(current_lines))
-
+        # Atualiza Velocidade
         if can_id == "500":
-            speed_decimal = int(payload[:2], 16)
-            self.lbl_speed.setText(str(speed_decimal))
+            speed = int(payload[:2], 16)
+            self.lbl_speed.setText(str(speed))
 
+        # Atualiza Estado do Sistema
         elif can_id == "201":
             state_code = payload[:2]
             mapping = {
-                "00": ("IDLE", "gray"),
-                "01": ("THEFT_CONFIRMED", "orange"),
-                "02": ("BLOCKING", "red"),
-                "03": ("BLOCKED", "darkred")
+                "00": ("SYSTEM READY", "#AAAAAA", False),
+                "01": ("THEFT DETECTED", "orange", False),
+                "02": ("BLOCKING ACTIVE", "red", True),
+                "03": ("VEHICLE BLOCKED", "darkred", True)
             }
-            name, color = mapping.get(state_code, ("UNKNOWN", "white"))
-            self.lbl_reb_state.setText(name)
-            self.lbl_reb_state.setStyleSheet(f"font-size: 24px; font-weight: bold; color: {color};")
-            
+            name, color, alarms = mapping.get(state_code, ("UNKNOWN", "white", False))
+            self.lbl_reb_status.setText(name)
+            self.lbl_reb_status.setStyleSheet(f"color: {color}; font-size: 18px; font-weight: bold; border: none;")
+
+            # Controle de Pisca-Alerta e Buzina
             self.bcm.update_alerts(state_code)
-            
-            alert_text = []
-            if self.bcm.horn_active: alert_text.append("HORN")
-            if self.bcm.hazard_lights_active: alert_text.append("HAZARDS")
-            
-            if alert_text:
-                self.lbl_alerts.setText(f"ALERTS: {' & '.join(alert_text)} ACTIVE!")
-                self.lbl_alerts.setStyleSheet("color: yellow; font-weight: bold;")
+
+            if alarms and self.bcm.hazard_lights_active:
+                if not self.blink_timer.isActive():
+                    self.blink_timer.start(500) # Pisca a cada 500ms
             else:
-                self.lbl_alerts.setText("ALERTS: OFF")
-                self.lbl_alerts.setStyleSheet("color: gray;")
+                self.blink_timer.stop()
+                self.left_arrow.setStyleSheet("font-size: 50px; color: #111111; font-weight: bold; border: none;")
+                self.right_arrow.setStyleSheet("font-size: 50px; color: #111111; font-weight: bold; border: none;")
+
+            if self.bcm.horn_active:
+                self.lbl_horn_indicator.show()
+            else:
+                self.lbl_horn_indicator.hide()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
