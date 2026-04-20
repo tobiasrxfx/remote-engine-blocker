@@ -8,9 +8,27 @@ class BCMModule:
         self.hazard_lights_active = False
 
     def trigger_intrusion(self):
-        # Simula invasão física (0x501)
-        # Payload: door(1) glass(1) shock(0) level(3) + padding
-        payload = "11030000"
+        """
+        Send BCM_INTRUSION_STATUS (0x501) aligned with the REB DBC:
+          byte 0 = door_open
+          byte 1 = glass_break
+          byte 2 = shock_detected
+          byte 3 = intrusion_level
+          byte 4..7 = reserved
+        """
+        door_open = 1
+        glass_break = 1
+        shock_detected = 0
+        intrusion_level = 3
+
+        payload = (
+            f"{door_open:02X}"
+            f"{glass_break:02X}"
+            f"{shock_detected:02X}"
+            f"{intrusion_level:02X}"
+            "00000000"
+        )
+        
         message = f"501:{payload}"
         try:
             self.socket.sendto(message.encode(), self.bus_addr)
