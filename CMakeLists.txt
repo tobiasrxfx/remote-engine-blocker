@@ -18,3 +18,9 @@ enable_testing()
 
 add_subdirectory(src)
 add_subdirectory(tests)
+
+add_custom_target(requirements_audit
+    COMMAND ${CMAKE_COMMAND} -E env python3 ${CMAKE_SOURCE_DIR}/tools/requirements_audit.py
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Running requirements coverage audit"
+)
