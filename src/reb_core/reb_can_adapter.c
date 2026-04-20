@@ -9,7 +9,7 @@ void reb_can_adapter_rx_to_inputs(
     if ((rx == NULL) || (inputs == NULL))
         return;
 
-    memset(inputs, 0, sizeof(*inputs));
+    // memset(inputs, 0, sizeof(*inputs));
 
     inputs->timestamp_ms = now_ms;
 
@@ -25,6 +25,35 @@ void reb_can_adapter_rx_to_inputs(
         case CAN_MSG_TCU_TO_REB:
             inputs->tcu_ack_received =
                 (rx->data.tcu_to_reb.tcu_cmd == CAN_TCU_CMD_ACK);
+            break;
+
+        case CAN_MSG_VEHICLE_STATE:
+            inputs->vehicle_speed_kmh =
+                rx->data.vehicle_state.vehicle_speed_centi_kmh / 100;
+
+            inputs->engine_rpm =
+                rx->data.vehicle_state.engine_rpm;
+
+            break;
+
+        case CAN_MSG_BCM_INTRUSION_STATUS:
+            inputs->intrusion_detected =
+                (rx->data.bcm_intrusion.intrusion_level != CAN_INTRUSION_NONE);
+            break;
+
+        case CAN_MSG_PANEL_AUTH_CMD:
+            if (rx->data.panel_auth.auth_request)
+            {
+                inputs->remote_command = REB_REMOTE_UNLOCK;
+                inputs->nonce = rx->data.panel_auth.auth_nonce;
+            }
+            break;
+
+        case CAN_MSG_PANEL_CANCEL_CMD:
+            if (rx->data.panel_cancel.cancel_request)
+            {
+                inputs->remote_command = REB_REMOTE_CANCEL;
+            }
             break;
 
         default:

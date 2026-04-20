@@ -1,12 +1,23 @@
 #include "reb_logger.h"
 #include <stdio.h>
 #include <time.h>
-#include <direct.h> // Windows
+#if defined(_WIN32) && !defined(__CYGWIN__)
+#include <direct.h>
+#else
+#include <sys/stat.h>
+#include <sys/types.h>
+#endif
 
 static void reb_logger_write(const char *level, const char *message)
 {
-    _mkdir("artifacts");
-    _mkdir("artifacts/logs");
+    #if defined(_WIN32) && !defined(__CYGWIN__)
+        _mkdir("artifacts");
+        _mkdir("artifacts/logs");
+    #else
+        mkdir("artifacts", 0777);
+        mkdir("artifacts/logs", 0777);
+    #endif
+    
 
     FILE *log_file = fopen("artifacts/logs/reb.log", "a");
 
