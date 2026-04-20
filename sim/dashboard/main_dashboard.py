@@ -121,8 +121,8 @@ class DashboardWindow(QMainWindow):
                 data, _ = self.socket.recvfrom(1024)
                 raw_msg = data.decode()
                 if ":" in raw_msg:
-                    can_id, payload = raw_msg.split(":")
-                    self.can_msg_received.emit(can_id, payload, raw_msg)
+                    can_id, payload = raw_msg.split(":",1)
+                    self.can_msg_received.emit(can_id.upper(), payload.upper(), raw_msg)
             except Exception as e:
                 print(f"Receive Error: {e}")
                 break
@@ -133,8 +133,12 @@ class DashboardWindow(QMainWindow):
         self.console.setText(f"[RX] {full_msg}\n" + "\n".join(current_lines))
 
         if can_id == "500":
-            speed_decimal = int(payload[:2], 16)
-            self.lbl_speed.setText(str(speed_decimal))
+            try:
+                speed_centi_kmh = int.from_bytes(bytes.fromhex(payload[:4]), "little")
+                speed_kmh = speed_centi_kmh / 100.0
+                self.lbl_speed.setText(f"{speed_kmh:.1f}")
+            except Exception:
+                pass
 
         elif can_id == "201":
             state_code = payload[:2]
@@ -151,12 +155,14 @@ class DashboardWindow(QMainWindow):
             self.bcm.update_alerts(state_code)
             
             alert_text = []
-            if self.bcm.horn_active: alert_text.append("HORN")
-            if self.bcm.hazard_lights_active: alert_text.append("HAZARDS")
+            if self.bcm.horn_active:
+                alert_text.append("HORN")
+            if self.bcm.hazard_lights_active:
+                alert_text.append("HAZARDS")
             
             if alert_text:
                 self.lbl_alerts.setText(f"ALERTS: {' & '.join(alert_text)} ACTIVE!")
-                self.lbl_alerts.setStyleSheet("color: yellow; font-weight: bold;")
+                self.lbl_alerts.setStyleSheet("color: black; font-weight: bold;")
             else:
                 self.lbl_alerts.setText("ALERTS: OFF")
                 self.lbl_alerts.setStyleSheet("color: gray;")
