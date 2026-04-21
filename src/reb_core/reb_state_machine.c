@@ -38,13 +38,25 @@ void reb_state_machine_step(RebContext *context,
     {
         case REB_STATE_IDLE:
         {
-            if ((inputs->intrusion_detected == true) ||
-                ((inputs->remote_command == REB_REMOTE_BLOCK) &&
-                 reb_security_validate_remote_command(inputs, context)))
+            if (inputs->intrusion_detected == true)
             {
                 context->current_state = REB_STATE_THEFT_CONFIRMED;
                 context->theft_confirmed_timestamp_ms = inputs->timestamp_ms;
-                reb_logger_info("Transition: IDLE -> THEFT_CONFIRMED");
+                reb_logger_info("Transition: IDLE -> THEFT_CONFIRMED (automatic)");
+            }
+            else if ((inputs->remote_command == REB_REMOTE_BLOCK) &&
+                     reb_security_validate_remote_command(inputs, context))
+            {
+                context->current_state = REB_STATE_THEFT_CONFIRMED;
+                context->theft_confirmed_timestamp_ms = inputs->timestamp_ms;
+                reb_logger_info("Transition: IDLE -> THEFT_CONFIRMED (remote)");
+
+                if (inputs->vehicle_speed_kmh <= 0.0f)
+                {
+                    context->current_state = REB_STATE_BLOCKING;
+                    context->vehicle_stopped_timestamp_ms = inputs->timestamp_ms;
+                    reb_logger_info("Transition: THEFT_CONFIRMED -> BLOCKING (stationary remote block)");
+                }
             }
             break;
         }
