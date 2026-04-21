@@ -421,24 +421,42 @@ int main(int argc, char *argv[])
         print_reb_context(&context);
         print_reb_outputs(&outputs);
 
-        reb_can_adapter_outputs_to_tx(&context, &outputs, &tx_msg);
+        can_tx_message_t tx_list[4];
+        uint32_t tx_count = 0U;
+        uint32_t i;
 
-        tx_status = can_tx_build_frame(&tx_msg, &tx_frame);
-        if (tx_status != CAN_TX_STATUS_OK)
+        reb_can_adapter_outputs_to_tx(&context, &outputs, tx_list, &tx_count);
+
+        for (i = 0U; i < tx_count; i++)
         {
-            printf("TX build failed: %d\n", tx_status);
-            exit_code = 1;
-            break;
+            can_frame_t tx_frame;
+
+            tx_status = can_tx_build_frame(&tx_list[i], &tx_frame);
+            if (tx_status != CAN_TX_STATUS_OK)
+            {
+                printf("TX build failed for msg_id %u: %d\n",
+                    (unsigned int)tx_list[i].msg_id,
+                    (int)tx_status);
+                exit_code = 1;
+                break;
+            }
+
+            (void)can_monitor_on_tx(&monitor, tx_list[i].msg_id, now_ms);
+            print_tx_frame(&tx_frame);
+
+            transport_status = can_socket_transport_send_frame(&transport, &tx_frame);
+            if (transport_status != CAN_SOCKET_TRANSPORT_STATUS_OK)
+            {
+                printf("Send/serialize failed for msg_id %u: %d\n",
+                    (unsigned int)tx_list[i].msg_id,
+                    (int)transport_status);
+                exit_code = 1;
+                break;
+            }
         }
 
-        (void)can_monitor_on_tx(&monitor, tx_msg.msg_id, now_ms);
-        print_tx_frame(&tx_frame);
-
-        transport_status = can_socket_transport_send_frame(&transport, &tx_frame);
-        if (transport_status != CAN_SOCKET_TRANSPORT_STATUS_OK)
+        if (exit_code != 0)
         {
-            printf("Send/serialize failed: %d\n", transport_status);
-            exit_code = 1;
             break;
         }
     }
