@@ -54,7 +54,6 @@ void reb_state_machine_step(RebContext *context,
                 if (inputs->vehicle_speed_kmh <= 0.0f)
                 {
                     context->current_state = REB_STATE_BLOCKING;
-                    context->vehicle_stopped_timestamp_ms = inputs->timestamp_ms;
                     reb_logger_info("Transition: THEFT_CONFIRMED -> BLOCKING (stationary remote block)");
                 }
             }
@@ -76,7 +75,6 @@ void reb_state_machine_step(RebContext *context,
             if (inputs->vehicle_speed_kmh <= 0.0f)
             {
                 context->current_state = REB_STATE_BLOCKING;
-                context->vehicle_stopped_timestamp_ms = inputs->timestamp_ms;
                 reb_logger_info("Transition: THEFT_CONFIRMED -> BLOCKING (stationary)");
                 break;
             }
@@ -104,6 +102,7 @@ void reb_state_machine_step(RebContext *context,
             }
             else
             {
+                /*
                 outputs->derate_percent = REB_DERATE_MAX_PERCENT;
 
                 if (context->vehicle_stopped_timestamp_ms == 0U)
@@ -119,6 +118,9 @@ void reb_state_machine_step(RebContext *context,
                     context->current_state = REB_STATE_BLOCKED;
                     reb_logger_info("Transition: BLOCKING -> BLOCKED");
                 }
+                */
+                context->current_state = REB_STATE_BLOCKED;
+                reb_logger_info("Transition: BLOCKING -> BLOCKED");
             }
             break;
         }
