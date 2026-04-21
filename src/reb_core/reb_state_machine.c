@@ -73,6 +73,14 @@ void reb_state_machine_step(RebContext *context,
                 break;
             }
 
+            if (inputs->vehicle_speed_kmh <= 0.0f)
+            {
+                context->current_state = REB_STATE_BLOCKING;
+                context->vehicle_stopped_timestamp_ms = inputs->timestamp_ms;
+                reb_logger_info("Transition: THEFT_CONFIRMED -> BLOCKING (stationary)");
+                break;
+            }
+
             if ((inputs->timestamp_ms -
                  context->theft_confirmed_timestamp_ms) >=
                 REB_THEFT_CONFIRM_WINDOW_MS)
