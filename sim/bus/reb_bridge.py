@@ -47,9 +47,7 @@ class REBBridge:
 
     def start(self) -> None:
         self._connect_to_reb()
-
         self.running = True
-
         self._register_on_bus()
 
         print(
@@ -93,17 +91,52 @@ class REBBridge:
 
     def _connect_to_reb(self) -> None:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(None)
         sock.connect(self.reb_addr)
         self.tcp_socket = sock
         print(f"[BRIDGE] Connected to REB at {self.reb_addr[0]}:{self.reb_addr[1]}")
 
+    def _recv_all_available_tcp_frames(self) -> list[bytes]:
+        """
+        Read the first TCP frame with normal blocking behavior, then drain any
+        additional frames already available using a short timeout.
+        """
+        if self.tcp_socket is None:
+            raise RuntimeError("TCP socket not connected")
+
+        frames: list[bytes] = []
+
+        original_timeout = self.tcp_socket.gettimeout()
+
+        # First frame: blocking receive
+        first = self._recv_tcp_frame()
+        frames.append(first)
+
+        # Additional frames: short timeout just to drain pending responses
+        self.tcp_socket.settimeout(0.05)
+        try:
+            while True:
+                try:
+                    frame = self._recv_tcp_frame()
+                    frames.append(frame)
+                except socket.timeout:
+                    break
+        finally:
+            self.tcp_socket.settimeout(original_timeout)
+
+        return frames
+
     def _udp_to_reb_loop(self) -> None:
         while self.running:
             try:
-                data, sender = self.udp_socket.recvfrom(UDP_BUFFER_SIZE)
+                data, _ = self.udp_socket.recvfrom(UDP_BUFFER_SIZE)
             except socket.timeout:
                 continue
-            except OSError:
+            except ConnectionResetError as exc:
+                print(f"[BRIDGE] Ignoring UDP reset on Windows: {exc}")
+                continue
+            except OSError as exc:
+                print(f"[BRIDGE] UDP socket warning: {exc}")
                 break
             except Exception as exc:
                 print(f"[BRIDGE] UDP receive error: {exc}")
@@ -128,18 +161,26 @@ class REBBridge:
                 self._send_tcp_frame(frame)
                 print(f"[BRIDGE] UDP -> REB | ID=0x{can_id:03X} DATA={payload.hex().upper()}")
 
-                rx_frame = self._recv_tcp_frame()
-                rx_id, rx_payload = self._parse_tcp_can_frame(rx_frame)
+                rx_frames = self._recv_all_available_tcp_frames()
 
-                if rx_id in SUPPORTED_TX_IDS:
-                    udp_msg = self._build_udp_can_message(rx_id, rx_payload)
-                    self.udp_socket.sendto(udp_msg.encode(), self.bus_addr)
-                    print(f"[BRIDGE] REB -> UDP | {udp_msg}")
+                for rx_frame in rx_frames:
+                    rx_id, rx_payload = self._parse_tcp_can_frame(rx_frame)
 
-            except Exception as exc:
-                print(f"[BRIDGE] Bridge transaction error: {exc}")
+                    if rx_id in SUPPORTED_TX_IDS:
+                        udp_msg = self._build_udp_can_message(rx_id, rx_payload)
+                        self.udp_socket.sendto(udp_msg.encode(), self.bus_addr)
+                        print(f"[BRIDGE] REB -> UDP | {udp_msg}")
+
+            except socket.timeout as exc:
+                print(f"[BRIDGE] TCP timeout waiting for REB response: {exc}")
+                continue
+            except ConnectionError as exc:
+                print(f"[BRIDGE] TCP connection error: {exc}")
                 self.running = False
                 break
+            except Exception as exc:
+                print(f"[BRIDGE] Bridge transaction error: {exc}")
+                continue
 
     def _parse_udp_can_message(self, raw_msg: str) -> Optional[Tuple[int, bytes]]:
         if ":" not in raw_msg:
@@ -180,12 +221,12 @@ class REBBridge:
 
         return struct.pack(
             ">IBBBB8s",
-            can_id,                 # uint32 CAN ID
-            0,                      # id_type = standard
-            0,                      # frame_type = data
-            dlc,                    # DLC
-            CAN_PROTOCOL_VERSION,   # version
-            payload,                # 8 bytes
+            can_id,
+            0,  # id_type = standard
+            0,  # frame_type = data
+            dlc,
+            CAN_PROTOCOL_VERSION,
+            payload,
         )
 
     def _parse_tcp_can_frame(self, frame: bytes) -> Tuple[int, bytes]:
