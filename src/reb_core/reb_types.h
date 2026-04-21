@@ -217,6 +217,9 @@ typedef struct
     RebState current_state;
 
     /* --- Timing & Confirmation --- */
+
+    /** @brief True when theft confirmation came from an automatic intrusion trigger. */
+    bool automatic_trigger_active;
     
     /** @brief Timestamp when theft was confirmed (state entry time). */
     uint32_t theft_confirmed_timestamp_ms;

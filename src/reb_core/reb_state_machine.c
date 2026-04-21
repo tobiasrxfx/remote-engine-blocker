@@ -25,6 +25,7 @@ void reb_state_machine_init(RebContext *context)
     memset(context, 0, sizeof(RebContext));
     context->current_state = REB_STATE_IDLE;
     context->last_valid_nonce = 0U;
+    context->automatic_trigger_active = false;
     reb_logger_info("State machine initialized to IDLE");
 }
 
@@ -42,6 +43,7 @@ void reb_state_machine_step(RebContext *context,
             {
                 context->current_state = REB_STATE_THEFT_CONFIRMED;
                 context->theft_confirmed_timestamp_ms = inputs->timestamp_ms;
+                context->automatic_trigger_active = true;
                 reb_logger_info("Transition: IDLE -> THEFT_CONFIRMED (automatic)");
             }
             else if ((inputs->remote_command == REB_REMOTE_BLOCK) &&
@@ -49,6 +51,7 @@ void reb_state_machine_step(RebContext *context,
             {
                 context->current_state = REB_STATE_THEFT_CONFIRMED;
                 context->theft_confirmed_timestamp_ms = inputs->timestamp_ms;
+                context->automatic_trigger_active = false;
                 reb_logger_info("Transition: IDLE -> THEFT_CONFIRMED (remote)");
 
                 if (inputs->vehicle_speed_kmh <= 0.0f)
@@ -68,11 +71,13 @@ void reb_state_machine_step(RebContext *context,
             if (inputs->remote_command == REB_REMOTE_CANCEL)
             {
                 context->current_state = REB_STATE_IDLE;
+                context->automatic_trigger_active = false;
                 reb_logger_info("Theft event cancelled");
                 break;
             }
 
-            if (inputs->vehicle_speed_kmh <= 0.0f)
+            if ((!context->automatic_trigger_active) &&
+                 (inputs->vehicle_speed_kmh <= 0.0f))
             {
                 context->current_state = REB_STATE_BLOCKING;
                 reb_logger_info("Transition: THEFT_CONFIRMED -> BLOCKING (stationary)");
@@ -84,6 +89,7 @@ void reb_state_machine_step(RebContext *context,
                 REB_THEFT_CONFIRM_WINDOW_MS)
             {
                 context->current_state = REB_STATE_BLOCKING;
+                context->automatic_trigger_active = false;
                 reb_logger_info("Transition: THEFT_CONFIRMED -> BLOCKING");
             }
             break;

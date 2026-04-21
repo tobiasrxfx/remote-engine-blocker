@@ -13,6 +13,6 @@ void reb_can_adapter_rx_to_inputs(
 void reb_can_adapter_outputs_to_tx(
     const RebContext *context,
     const RebOutputs *outputs,
-    can_tx_message_t *tx);
-
+    can_tx_message_t *tx_list,
+    uint32_t *tx_count);
 #endif
