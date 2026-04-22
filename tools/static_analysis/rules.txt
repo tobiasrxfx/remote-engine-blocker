@@ -1,0 +1,5 @@
+Appendix A Summary of guidelines
+Rule 15.5
+A function shall have a single point of exit at the end
+Rule 17.7
+The value returned by a function having non-void return type shall be used
