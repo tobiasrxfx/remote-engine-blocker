@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="1">
+    <builddir>build</builddir>
+    <analyze-all-vs-configs>false</analyze-all-vs-configs>
+    <check-headers>true</check-headers>
+    <check-unused-templates>true</check-unused-templates>
+    <inline-suppression>true</inline-suppression>
+    <max-ctu-depth>2</max-ctu-depth>
+    <max-template-recursion>100</max-template-recursion>
+    <includedir>
+        <dir name="../../src/reb_core/"/>
+    </includedir>
+    <paths>
+        <dir name="../../src/reb_core"/>
+    </paths>
+    <addons>
+        <addon>misra</addon>
+    </addons>
+    <addon-options>
+        <addon-option addon="misra">
+            <option name="rule-texts" value="rules.txt"/>
+        </addon-option>
+    </addon-options>
+    <tags>
+        <tag>Style</tag>
+        <tag>Performance</tag>
+        <tag>Portability</tag>
+        <tag>Information</tag>
+    </tags>
+    <check-level-normal/>
+    <project-name>reb_analysis</project-name>
+</project>
