@@ -160,6 +160,11 @@ class DashboardWindow(QMainWindow):
         self.btn_bcm_intrusion.clicked.connect(self.send_bcm_intrusion)
         commands_vbox.addWidget(self.btn_bcm_intrusion)
 
+        self.btn_panel_block = QPushButton("PANEL BLOCK (0x504)")
+        self.btn_panel_block.setStyleSheet("background-color: #884400; color: white; font-weight: bold;")
+        self.btn_panel_block.clicked.connect(self.send_panel_block)
+        commands_vbox.addWidget(self.btn_panel_block)
+
         input_panels.addWidget(self.commands_frame)
 
         # Vehicle control
@@ -323,6 +328,19 @@ class DashboardWindow(QMainWindow):
 
     def send_bcm_intrusion(self):
         self.bcm.trigger_intrusion()
+
+    def send_panel_block(self):
+        block_request = 1
+        auth_method = 1
+        block_nonce = self._next_panel_nonce()
+
+        payload = (
+            f"{block_request:02X}"
+            f"{auth_method:02X}"
+            f"{self._u16le_hex(block_nonce)}"
+            "00000000"
+        )
+        self.send_can_raw(f"504:{payload}")
 
     def send_vehicle_state(self):
         speed_kmh = self.speed_slider.value()
