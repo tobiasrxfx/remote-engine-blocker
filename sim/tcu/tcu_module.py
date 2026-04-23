@@ -43,6 +43,7 @@ class TCUModule:
             try:
                 self.socket.sendto(message.encode(), self.bus_addr)
                 print(f" [TCU] Remote Block Command sent: {message}")
+                self.next_nonce += 1
             except Exception as e:
                 print(f" [TCU ERROR] {e}")
 
@@ -75,6 +76,30 @@ class TCUModule:
                 self.next_nonce += 1
             except Exception as e:
                 print(f" [TCU ERROR] {e}")
+    
+    def send_tcu_ack(self):
+        """
+        Sends TCU_TO_REB ACK (0x300), needed by reb_security_unlock_allowed().
+        """
+        tcu_cmd_ack = 0  # CAN_TCU_CMD_ACK
+        fail_reason = 0
+        echo_timestamp = self._next_timestamp_ms()
+
+        payload = (
+            f"{tcu_cmd_ack:02X}"
+            f"{fail_reason:02X}"
+            f"{self._u32le_hex(echo_timestamp)}"
+            "0000"
+        )
+
+        message = f"300:{payload}"
+
+        if self.socket:
+            try:
+                self.socket.sendto(message.encode(), self.bus_addr)
+                print(f"[TCU] ACK sent: {message}")
+            except Exception as e:
+                print(f"[TCU ERROR] {e}")
 
 if __name__ == "__main__":
     # Standalone test

@@ -20,6 +20,10 @@ void reb_can_adapter_rx_to_inputs(
                 (RebRemoteCommand)rx->data.reb_cmd.cmd_type;
 
             inputs->nonce = rx->data.reb_cmd.cmd_nonce;
+            if (rx->data.reb_cmd.cmd_type == 2U)  
+            {
+                inputs->tcu_ack_received = true;
+            }
             break;
 
         case CAN_MSG_TCU_TO_REB:
