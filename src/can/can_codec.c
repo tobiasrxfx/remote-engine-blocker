@@ -527,3 +527,27 @@ can_codec_status_t can_codec_decode_panel_cancel_cmd(
 
     return CAN_CODEC_STATUS_OK;
 }
+
+can_codec_status_t can_codec_decode_panel_block_cmd(
+    const can_frame_t *frame,
+    can_panel_block_cmd_t *msg)
+{
+    can_codec_status_t status;
+
+    if (msg == NULL)
+    {
+        return CAN_CODEC_STATUS_NULL_POINTER;
+    }
+
+    status = can_codec_validate_rx_frame(frame, CAN_MSG_PANEL_BLOCK_CMD);
+    if (status != CAN_CODEC_STATUS_OK)
+    {
+        return status;
+    }
+
+    msg->block_request = frame->data[0];
+    msg->auth_method = (can_auth_method_t)frame->data[1];
+    msg->block_nonce = can_codec_read_u16_le(&frame->data[2]);
+
+    return CAN_CODEC_STATUS_OK;
+}

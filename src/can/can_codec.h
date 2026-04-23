@@ -237,6 +237,16 @@ typedef struct
 } can_panel_cancel_cmd_t;
 
 /**
+ * @brief PANEL_BLOCK_CMD message.
+ */
+typedef struct
+{
+    uint8_t block_request;
+    can_auth_method_t auth_method;
+    uint16_t block_nonce;
+} can_panel_block_cmd_t;
+
+/**
  * @brief Decode a REB_CMD frame.
  */
 can_codec_status_t can_codec_decode_reb_cmd(
@@ -305,6 +315,13 @@ can_codec_status_t can_codec_decode_panel_auth_cmd(
 can_codec_status_t can_codec_decode_panel_cancel_cmd(
     const can_frame_t *frame,
     can_panel_cancel_cmd_t *msg);
+
+/**
+ * @brief Decode a PANEL_BLOCK_CMD frame.
+ */
+can_codec_status_t can_codec_decode_panel_block_cmd(
+    const can_frame_t *frame,
+    can_panel_block_cmd_t *msg);
 
 #ifdef __cplusplus
 }

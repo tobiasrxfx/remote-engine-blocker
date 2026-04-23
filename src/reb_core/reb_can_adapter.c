@@ -56,7 +56,15 @@ void reb_can_adapter_rx_to_inputs(
                 inputs->remote_command = REB_REMOTE_CANCEL;
             }
             break;
-
+        
+        case CAN_MSG_PANEL_BLOCK_CMD:
+            if (rx->data.panel_block.block_request)
+            {
+                inputs->remote_command = REB_REMOTE_BLOCK;
+                inputs->nonce = rx->data.panel_block.block_nonce;
+                inputs->tcu_ack_received = true;
+            }
+            break;
         default:
             break;
     }
