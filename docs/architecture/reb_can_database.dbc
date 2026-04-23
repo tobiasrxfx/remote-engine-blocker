@@ -104,6 +104,16 @@ BO_ 1283 PANEL_CANCEL_CMD: 8 PANEL
  SG_ reserved_panel_cancel: 32|32@1+ (1,0)    [0|4294967295] "" REB
 
 // ============================================================
+// PANEL_BLOCK_CMD — PANEL → REB  (ID 0x504 = 1284 decimal)
+// Comando manual local de bloqueio autenticado via painel
+// ============================================================
+BO_ 1284 PANEL_BLOCK_CMD: 8 PANEL
+ SG_ block_request        : 0|8@1+   (1,0)    [0|1]      "" REB
+ SG_ auth_method          : 8|8@1+   (1,0)    [0|3]      "" REB
+ SG_ block_nonce          : 16|16@1+ (1,0)    [0|65535]  "" REB
+ SG_ reserved_panel_block : 32|32@1+ (1,0)    [0|4294967295] "" REB
+
+// ============================================================
 // Definições de valores dos sinais
 // ============================================================
 VAL_ 512 cmd_type

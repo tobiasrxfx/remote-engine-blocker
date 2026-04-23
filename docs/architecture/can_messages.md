@@ -65,7 +65,7 @@ The following nodes participate in the CAN network:
 | BCM_INTRUSION_STATUS  | 0x501    | 1281     |
 | PANEL_AUTH_CMD        | 0x502    | 1282     |
 | PANEL_CANCEL_CMD      | 0x503    | 1283     |
-
+| PANEL_BLOCK_CMD       | 0x504    | 1284     |
 ---
 
 ## 5. Message Definitions (DBC-Aligned)
@@ -204,6 +204,19 @@ Manual cancel request from user panel.
 | cancel_reason          | Reason for cancellation      |
 | cancel_nonce           | Event nonce / anti-duplicate |
 | reserved_panel_cancel  | Reserved                     |
+
+---
+
+### BO_ 0x504 PANEL_BLOCK_CMD: 8 PANEL → REB
+
+Manual block request from user panel.
+
+| Signal                 | Description                  |
+| ---------------------- | ---------------------------- |
+| block_request          | Block request flag           |
+| auth_method            | Authentication method        |
+| block_nonce            | Block nonce / anti-duplicate |
+| reserved_panel_block   | Reserved                     |
 
 
 ---
