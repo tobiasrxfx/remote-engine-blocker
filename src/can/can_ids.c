@@ -5,7 +5,7 @@
 /**
  * @brief Total number of known DBC-aligned CAN messages.
  */
-#define CAN_IDS_MESSAGE_COUNT    (10U)
+#define CAN_IDS_MESSAGE_COUNT    (11U)
 
 /**
  * @brief Static lookup table for all known CAN messages.
