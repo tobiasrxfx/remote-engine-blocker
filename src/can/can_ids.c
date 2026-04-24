@@ -5,7 +5,7 @@
 /**
  * @brief Total number of known DBC-aligned CAN messages.
  */
-#define CAN_IDS_MESSAGE_COUNT    (10U)
+#define CAN_IDS_MESSAGE_COUNT    (11U)
 
 /**
  * @brief Static lookup table for all known CAN messages.
@@ -117,6 +117,17 @@ static const can_msg_desc_t g_can_msg_table[CAN_IDS_MESSAGE_COUNT] =
     {
         .msg_id = CAN_MSG_PANEL_CANCEL_CMD,
         .can_id = 0x503U,
+        .id_type = CAN_ID_TYPE_STANDARD,
+        .dlc = 8U,
+        .producer = CAN_NODE_PANEL,
+        .direction = CAN_DIRECTION_RX,
+        .period_ms = CAN_PERIOD_EVENT_MS,
+        .timeout_ms = 500U,
+        .mandatory = false
+    },
+        {
+        .msg_id = CAN_MSG_PANEL_BLOCK_CMD,
+        .can_id = 0x504U,
         .id_type = CAN_ID_TYPE_STANDARD,
         .dlc = 8U,
         .producer = CAN_NODE_PANEL,

@@ -38,6 +38,12 @@ def start_virtual_bus():
             except socket.timeout:
                 # Timeout reached, loop back to check for Ctrl+C
                 continue
+            except ConnectionResetError as e:
+                print(f" [BUS] Ignoring UDP reset on Windows: {e}")
+                continue
+            except OSError as e:
+                print(f" [BUS] Socket warning: {e}")
+                continue
 
             # Register new client addresses automatically upon first message
             if addr not in clients:

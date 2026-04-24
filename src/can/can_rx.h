@@ -41,6 +41,7 @@ typedef struct
         can_bcm_intrusion_status_t bcm_intrusion;
         can_panel_auth_cmd_t panel_auth;
         can_panel_cancel_cmd_t panel_cancel;
+        can_panel_block_cmd_t panel_block;
         
     } data;
 } can_rx_message_t;

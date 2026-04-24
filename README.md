@@ -60,6 +60,20 @@ cmake --build build
 
 Instructions will be added as the simulation environment is finalized.
 
+### Requirements audit (optional)
+
+Run directly:
+
+```bash
+python3 tools/requirements_audit.py
+```
+
+Or via CMake target:
+
+```bash
+cmake --build build --target requirements_audit
+```
+
 ## Team workflow
 
 - branching from `dev`
