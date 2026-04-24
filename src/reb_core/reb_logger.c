@@ -14,31 +14,33 @@ static void reb_logger_write(const char *level, const char *message)
         _mkdir("artifacts");
         _mkdir("artifacts/logs");
     #else
-        mkdir("artifacts", 0777);
-        mkdir("artifacts/logs", 0777);
+        mkdir("artifacts", 511U);
+        mkdir("artifacts/logs", 511U);
     #endif
     
 
     FILE *log_file = fopen("artifacts/logs/reb.log", "a");
 
-    if (log_file == NULL)
+    if (log_file != NULL)
     {
-        printf("Erro ao abrir arquivo de log!\n");
-        return;
+    
+        time_t rawtime;
+        struct tm *info;
+        char buffer[80];
+
+        time(&rawtime);
+        info = localtime(&rawtime);
+
+        // Format: dd/mm/yyyy hh:mm:ss
+        (void)strftime(buffer, sizeof(buffer), "%d/%m/%Y %H:%M:%S", info);
+
+        (void)fprintf(log_file, "[%s] [%s] %s\n", level, buffer, message);
+        (void)fclose(log_file);
     }
-
-    time_t rawtime;
-    struct tm *info;
-    char buffer[80];
-
-    time(&rawtime);
-    info = localtime(&rawtime);
-
-    // Format: dd/mm/yyyy hh:mm:ss
-    strftime(buffer, sizeof(buffer), "%d/%m/%Y %H:%M:%S", info);
-
-    fprintf(log_file, "[%s] [%s] %s\n", level, buffer, message);
-    fclose(log_file);
+    else
+    {
+        (void)printf("Erro ao abrir arquivo de log!\n");
+    }
 }
 
 void reb_logger_info(const char *message)
