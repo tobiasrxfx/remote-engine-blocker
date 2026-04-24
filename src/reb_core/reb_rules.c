@@ -1,4 +1,4 @@
-#include "reb_types.h"
+#include "reb_rules.h"
 #include "reb_config.h"
 
 bool reb_rules_safe_to_block(const RebInputs *inputs)
