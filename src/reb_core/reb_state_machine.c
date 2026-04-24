@@ -22,7 +22,7 @@ static void reb_apply_derating(const RebInputs *inputs,
 
 void reb_state_machine_init(RebContext *context)
 {
-    memset(context, 0, sizeof(RebContext));
+    (void)memset(context, 0, sizeof(RebContext));
     context->current_state = REB_STATE_IDLE;
     context->last_valid_nonce = 0U;
     context->automatic_trigger_active = false;
@@ -33,7 +33,7 @@ void reb_state_machine_step(RebContext *context,
                             const RebInputs *inputs,
                             RebOutputs *outputs)
 {
-    memset(outputs, 0, sizeof(RebOutputs));
+    (void)memset(outputs, 0, sizeof(RebOutputs));
 
     switch (context->current_state)
     {
@@ -59,6 +59,10 @@ void reb_state_machine_step(RebContext *context,
                     context->current_state = REB_STATE_BLOCKING;
                     reb_logger_info("Transition: THEFT_CONFIRMED -> BLOCKING (stationary remote block)");
                 }
+            }
+            else
+            {
+                /* No action required. Misra C:2012 Rule 15.7.*/
             }
             break;
         }
@@ -156,6 +160,10 @@ void reb_state_machine_step(RebContext *context,
             {
                 context->invalid_unlock_attempts++;
                 reb_logger_warn("Rejected unlock command");
+            }
+            else
+            {
+                /* No action required. Misra C:2012 Rule 15.7.*/
             }
             break;
         }
