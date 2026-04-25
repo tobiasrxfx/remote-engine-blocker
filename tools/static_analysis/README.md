@@ -12,9 +12,23 @@ This folder contains the tools and configurations for MISRA C:2012 compliance an
 ## How to Use
 
 ### Terminal (Fast Check)
-Run the script corresponding to your OS to see violations directly in the terminal:
-- **Windows**: `.\run_analysis.bat`
-- **Linux**: `./run_analysis.sh`
+
+1. **Enter the analysis directory:**
+   ```bash
+   cd tools/static_analysis
+   ```
+
+2. **Run the script**
+
+    **On Windows:**
+    ```bash
+    .\run_analysis.bat
+    ```
+
+    **On Linux/Git Bash:**
+    ```bash
+    ./run_analysis.sh
+    ```
 
 ### GUI (Visual Debugging)
 For a better experience while fixing violations:

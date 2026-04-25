@@ -23,31 +23,53 @@ static uint32_t calculate_crc(const RebContext *ctx)
 
 bool reb_persistence_save(const RebContext *context)
 {
+    bool ret_val = false;
     FILE *file = fopen("artifacts/reb_state.bin", "wb");
-    if (!file) return false;
+    if (file != NULL)
+    {
+        RebPersistentData data;
+        data.context = *context;
+        data.crc = calculate_crc(context);
 
-    RebPersistentData data;
-    data.context = *context;
-    data.crc = calculate_crc(context);
+        (void)fwrite(&data, sizeof(data), 1, file);
+        (void)fclose(file);
 
-    fwrite(&data, sizeof(data), 1, file);
-    fclose(file);
-    return true;
+        ret_val = true;
+    }
+    else
+    {
+        /* No action required. Misra C:2012 Rule 15.7 */
+    }
+    
+    return ret_val;
 }
 
 bool reb_persistence_load(RebContext *context)
 {
+    bool ret_val = false;
     FILE *file = fopen("artifacts/reb_state.bin", "rb");
-    if (!file) return false;
+    if (file != NULL) 
+    {
+        RebPersistentData data;
+        (void)fread(&data, sizeof(data), 1, file);
+        (void)fclose(file);
 
-    RebPersistentData data;
-    fread(&data, sizeof(data), 1, file);
-    fclose(file);
+        if (data.crc == calculate_crc(&data.context))
+        {
+            *context = data.context;
+            context->persisted_state_valid = true;
+            ret_val = true;
+        }
+        else
+        {
+            /* No action required. Misra C:2012 Rule 15.7 */
+        }
 
-    if (data.crc != calculate_crc(&data.context))
-        return false;
+    }
+    else
+    {
+        /* No action required. Misra C:2012 Rule 15.7 */
+    }
 
-    *context = data.context;
-    context->persisted_state_valid = true;
-    return true;
+    return ret_val;
 }

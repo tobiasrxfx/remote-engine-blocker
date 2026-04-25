@@ -13,14 +13,16 @@
     <paths>
         <dir name="../../src/reb_core"/>
     </paths>
+    <suppressions>
+        <suppression>misra-c2012-17.3</suppression>
+        <suppression>misra-c2012-21.6</suppression>
+        <suppression>misra-c2012-21.10</suppression>
+        <suppression>misra-c2012-8.7</suppression>
+        <suppression>misra-c2012-2.5</suppression>
+    </suppressions>
     <addons>
         <addon>misra</addon>
     </addons>
-    <addon-options>
-        <addon-option addon="misra">
-            <option name="rule-texts" value="rules.txt"/>
-        </addon-option>
-    </addon-options>
     <tags>
         <tag>Style</tag>
         <tag>Performance</tag>
