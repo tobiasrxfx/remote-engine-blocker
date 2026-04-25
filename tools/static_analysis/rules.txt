@@ -1,0 +1,17 @@
+Appendix A Summary of guidelines
+Rule 8.4
+A compatible declaration shall be visible when an object or function with external linkage is defined
+Rule 15.5
+A function shall have a single point of exit at the end
+Rule 15.6
+The body of an iteration-statement or a selection-statement shall be a compound-statement
+Rule 15.7
+All if else if constructs shall be terminated with an else statement
+Rule 17.3
+A function shall not be declared implicitly
+Rule 17.7
+The value returned by a function having non-void return type shall be used
+Rule 21.6
+The Standard Library input/output functions shall not be used
+Rule 21.10
+The Standard Library time and date functions shall not be used

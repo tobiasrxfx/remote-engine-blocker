@@ -1,0 +1,173 @@
+VERSION ""
+
+NS_ :
+
+BS_:
+
+BU_: REB TCU ECU_FUEL ECU_MOTOR
+
+// ============================================================
+// REB_CMD  — TCU → REB  (ID 0x200 = 512 decimal)
+// Comando autenticado de bloqueio/desbloqueio
+// ============================================================
+BO_ 512 REB_CMD: 8 TCU
+ SG_ cmd_type       : 0|8@1+  (1,0)    [0|255]  ""  REB
+ SG_ cmd_mode       : 8|8@1+  (1,0)    [0|3]    ""  REB
+ SG_ cmd_nonce      : 16|16@1+ (1,0)   [0|65535] "" REB
+ SG_ cmd_timestamp  : 32|32@1+ (1,0)   [0|4294967295] "" REB
+
+// ============================================================
+// REB_STATUS — REB → TCU  (ID 0x201 = 513 decimal)
+// Status periódico do REB (100 ms)
+// ============================================================
+BO_ 513 REB_STATUS: 8 REB
+ SG_ status_code    : 0|8@1+  (1,0)    [0|255]  ""  TCU
+ SG_ blocked_flag   : 8|8@1+  (1,0)    [0|1]    ""  TCU
+ SG_ vehicle_speed  : 16|16@1+ (0.01,0) [0|655.35] "km/h" TCU
+ SG_ error_code     : 32|16@1+ (1,0)   [0|65535] ""  TCU
+ SG_ reserved       : 48|16@1+ (1,0)   [0|65535] ""  TCU
+
+// ============================================================
+// TCU_TO_REB — TCU → REB  (ID 0x300 = 768 decimal)
+// ACK do TCU para o REB confirmar recepção de comandos
+// ============================================================
+BO_ 768 TCU_TO_REB: 8 TCU
+ SG_ tcu_cmd        : 0|8@1+  (1,0)    [0|255]  ""  REB
+ SG_ fail_reason    : 8|8@1+  (1,0)    [0|255]  ""  REB
+ SG_ echo_timestamp : 16|32@1+ (1,0)   [0|4294967295] "" REB
+
+// ============================================================
+// REB_DERATE_CMD — REB → ECU_FUEL  (ID 0x400 = 1024 decimal)
+// Comando de derating gradual de combustível (500 ms)
+// ============================================================
+BO_ 1024 REB_DERATE_CMD: 8 REB
+ SG_ derate_pct     : 0|8@1+  (1,0)    [0|100]  "%"  ECU_FUEL
+ SG_ derate_mode    : 8|8@1+  (1,0)    [0|3]    ""   ECU_FUEL
+ SG_ safety_flag    : 16|8@1+ (1,0)    [0|1]    ""   ECU_FUEL
+
+// ============================================================
+// REB_PREVENT_START — REB → ECU_MOTOR  (ID 0x401 = 1025 decimal)
+// Comando de bloqueio definitivo do starter (edge trigger)
+// ============================================================
+BO_ 1025 REB_PREVENT_START: 8 REB
+ SG_ prevent_start  : 0|8@1+  (1,0)    [0|1]    ""   ECU_MOTOR
+ SG_ auth_token_lsb : 8|8@1+  (1,0)    [0|255]  ""   ECU_MOTOR
+
+// ============================================================
+// REB_GPS_REQUEST — REB → TCU  (ID 0x402 = 1026 decimal)
+// Pedido ao TCU para capturar e enviar GPS ao backend
+// ============================================================
+BO_ 1026 REB_GPS_REQUEST: 8 REB
+ SG_ gps_request    : 0|8@1+  (1,0)    [0|1]    ""   TCU
+ SG_ state_id_echo  : 8|8@1+  (1,0)    [0|255]  ""   TCU
+
+// ============================================================
+// VEHICLE_STATE — VEHICLE → REB  (ID 0x500 = 1280 decimal)
+// Estado operacional periódico do veículo para a lógica do REB
+// ============================================================
+BO_ 1280 VEHICLE_STATE: 8 VEHICLE
+ SG_ vehicle_speed      : 0|16@1+  (0.01,0) [0|655.35] "km/h" REB
+ SG_ ignition_on        : 16|8@1+  (1,0)    [0|1]      "" REB
+ SG_ engine_running     : 24|8@1+  (1,0)    [0|1]      "" REB
+ SG_ engine_rpm         : 32|16@1+ (1,0)    [0|65535]  "rpm" REB
+ SG_ reserved_vehicle   : 48|16@1+ (1,0)    [0|65535]  "" REB
+
+// ============================================================
+// BCM_INTRUSION_STATUS — BCM → REB  (ID 0x501 = 1281 decimal)
+// Estado periódico de intrusão e violação detectado pelo BCM
+// ============================================================
+BO_ 1281 BCM_INTRUSION_STATUS: 8 BCM
+ SG_ door_open          : 0|8@1+   (1,0)    [0|1]      "" REB
+ SG_ glass_break        : 8|8@1+   (1,0)    [0|1]      "" REB
+ SG_ shock_detected     : 16|8@1+  (1,0)    [0|1]      "" REB
+ SG_ intrusion_level    : 24|8@1+  (1,0)    [0|3]      "" REB
+ SG_ reserved_bcm       : 32|32@1+ (1,0)    [0|4294967295] "" REB
+
+// ============================================================
+// PANEL_AUTH_CMD — PANEL → REB  (ID 0x502 = 1282 decimal)
+// Comando local de autenticação/manual para o REB
+// ============================================================
+BO_ 1282 PANEL_AUTH_CMD: 8 PANEL
+ SG_ auth_request       : 0|8@1+   (1,0)    [0|1]      "" REB
+ SG_ auth_method        : 8|8@1+   (1,0)    [0|3]      "" REB
+ SG_ auth_nonce         : 16|16@1+ (1,0)    [0|65535]  "" REB
+ SG_ reserved_panel_auth: 32|32@1+ (1,0)    [0|4294967295] "" REB
+
+// ============================================================
+// PANEL_CANCEL_CMD — PANEL → REB  (ID 0x503 = 1283 decimal)
+// Comando local de cancelamento/abortamento para o REB
+// ============================================================
+BO_ 1283 PANEL_CANCEL_CMD: 8 PANEL
+ SG_ cancel_request       : 0|8@1+   (1,0)    [0|1]      "" REB
+ SG_ cancel_reason        : 8|8@1+   (1,0)    [0|3]      "" REB
+ SG_ cancel_nonce         : 16|16@1+ (1,0)    [0|65535]  "" REB
+ SG_ reserved_panel_cancel: 32|32@1+ (1,0)    [0|4294967295] "" REB
+
+// ============================================================
+// PANEL_BLOCK_CMD — PANEL → REB  (ID 0x504 = 1284 decimal)
+// Comando manual local de bloqueio autenticado via painel
+// ============================================================
+BO_ 1284 PANEL_BLOCK_CMD: 8 PANEL
+ SG_ block_request        : 0|8@1+   (1,0)    [0|1]      "" REB
+ SG_ auth_method          : 8|8@1+   (1,0)    [0|3]      "" REB
+ SG_ block_nonce          : 16|16@1+ (1,0)    [0|65535]  "" REB
+ SG_ reserved_panel_block : 32|32@1+ (1,0)    [0|4294967295] "" REB
+
+// ============================================================
+// Definições de valores dos sinais
+// ============================================================
+VAL_ 512 cmd_type
+ 0 "NOP"
+ 1 "BLOCK"
+ 2 "UNBLOCK"
+ 3 "STATUS_REQUEST" ;
+
+VAL_ 512 cmd_mode
+ 0 "IDLE_MODE"
+ 1 "GRADUAL_DERATE"
+ 2 "FULL_BLOCK"
+ 3 "EMERGENCY" ;
+
+VAL_ 513 status_code
+ 0 "IDLE"
+ 1 "THEFT_CONFIRMED"
+ 2 "BLOCKING"
+ 3 "BLOCKED" ;
+
+VAL_ 768 tcu_cmd
+ 0 "ACK"
+ 1 "NACK"
+ 2 "RETRY"
+ 3 "FAIL" ;
+
+VAL_ 1024 derate_mode
+ 0 "OFF"
+ 1 "GRADUAL_RAMP"
+ 2 "STEP"
+ 3 "IMMEDIATE" ;
+
+VAL_ 1025 prevent_start
+ 0 "ALLOW"
+ 1 "BLOCK" ;
+
+VAL_ 1026 gps_request
+ 0 "NO_REQUEST"
+ 1 "REQUEST_GPS" ;
+
+VAL_ 1281 intrusion_level 
+ 0 "NONE" 
+ 1 "LOW" 
+ 2 "MEDIUM" 
+ 3 "HIGH" ;
+
+VAL_ 1282 auth_method 
+ 0 "UNKNOWN" 
+ 1 "LOCAL_BUTTON" 
+ 2 "PIN" 
+ 3 "SERVICE_OVERRIDE" ;
+
+VAL_ 1283 cancel_reason 
+ 0 "USER_REQUEST" 
+ 1 "FALSE_ALARM" 
+ 2 "MAINTENANCE" 
+ 3 "SAFETY_ABORT" ;

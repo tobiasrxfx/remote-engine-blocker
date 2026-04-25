@@ -29,6 +29,7 @@ def start_virtual_bus():
     print(" [INFO] Press Ctrl+C to shut down safely.")
     print(" Waiting for modules to connect...")
 
+    dashboard_addr = None
     try:
         while True:
             try:
@@ -36,6 +37,12 @@ def start_virtual_bus():
                 data, addr = bus_socket.recvfrom(BUFFER_SIZE)
             except socket.timeout:
                 # Timeout reached, loop back to check for Ctrl+C
+                continue
+            except ConnectionResetError as e:
+                print(f" [BUS] Ignoring UDP reset on Windows: {e}")
+                continue
+            except OSError as e:
+                print(f" [BUS] Socket warning: {e}")
                 continue
 
             # Register new client addresses automatically upon first message
@@ -47,7 +54,12 @@ def start_virtual_bus():
             # This simulates the shared nature of a real CAN bus
             message = data.decode().strip()
             for client_addr in clients:
-                if client_addr != addr:
+
+                is_dashboard = "DASHBOARD_CONNECTED" in message or addr == dashboard_addr
+                if is_dashboard:
+                    dashboard_addr = addr
+
+                if client_addr == dashboard_addr or client_addr != addr:
                     try:
                         bus_socket.sendto(data, client_addr)
                     except Exception as e:

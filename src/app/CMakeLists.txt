@@ -1,2 +1,2 @@
-add_executable(reb_app placeholder.c)
-target_link_libraries(reb_app PRIVATE reb_core can common)
+add_executable(reb_app_loop reb_server_loop.c)
+target_link_libraries(reb_app_loop PRIVATE reb_core can common)
