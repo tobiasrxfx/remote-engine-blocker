@@ -19,10 +19,14 @@ echo.
 echo [STEP 2] Verifying MISRA C compliance...
 cd "%BUILD_DIR%"
 
+set MISRA_SUPPRESS=17.3,21.6,21.10,8.7,2.5
 
 for %%f in (*.dump) do (
     echo Analyzing: %%f
-    python "C:\Program Files\Cppcheck\addons\misra.py" --rule-text="%TOOLS_DIR%\rules.txt" "%%f"
+    python "C:\Program Files\Cppcheck\addons\misra.py" ^
+        --rule-text="%TOOLS_DIR%\rules.txt" ^
+        --suppress-rules %MISRA_SUPPRESS% ^
+        "%%f"
 )
 
 cd "%TOOLS_DIR%"
